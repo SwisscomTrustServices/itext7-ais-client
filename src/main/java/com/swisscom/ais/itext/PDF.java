@@ -35,6 +35,7 @@ import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.util.*;
@@ -50,6 +51,7 @@ public class PDF {
      * Save file path from output file
      */
     private String outputFilePath;
+    private String outputFileTempPath;
 
     /**
      * Save password from pdf
@@ -208,17 +210,17 @@ public class PDF {
 
         pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
-        OutputStream outputStream = new FileOutputStream(outputFilePath);
+        outputFileTempPath = Files.createTempFile("signed", "-temp.pdf").toString();
+        OutputStream outputStream = new FileOutputStream(outputFileTempPath);
         byteArrayOutputStream.writeTo(outputStream);
 
         if (Soap._debugMode) {
-            System.out.println("\nOK writing signature to " + outputFilePath);
+            System.out.println("\nOK writing signature to " + outputFileTempPath);
         }
 
-//        byteArrayOutputStream.close();
         pdfDocument.close();
-//        outputStream.close();
-        pdfWriter.close();
+        byteArrayOutputStream.close();
+        outputStream.close();
     }
 
     /**
@@ -231,8 +233,6 @@ public class PDF {
         if (ocspArr == null && crlArr == null) {
             return;
         }
-
-        PdfReader reader = new PdfReader(outputFilePath);
 
         // Check if source pdf is not protected by a certification
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
@@ -283,34 +283,18 @@ public class PDF {
             }
         }
 
-        byteArrayOutputStream = new ByteArrayOutputStream();
-        PdfWriter writer = new PdfWriter(byteArrayOutputStream);
-//        PdfStamper stamper = new PdfStamper(reader, byteArrayOutputStream, '\0', true);
+        PdfReader reader = new PdfReader(outputFileTempPath);
+        PdfWriter writer = new PdfWriter(outputFilePath);
         PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode());
-//        LtvVerification validation = stamper.getLtvVerification();
         LtvVerification validation = new LtvVerification(pdfDocument);
 
-        // Add the CRL/OCSP validation information to the DSS Dictionary
-        boolean addVerification = false;
         // remove the for-statement because we want to add the recovation information to the latest signature only.
-//        for (String sigName : stamper.getAcroFields().getSignatureNames()) {
-        for (String sigName : new SignatureUtil(pdfDocument).getSignatureNames()) {
-            addVerification = validation.addVerification(
-                sigName, // Signature Name
-                ocsp, // OCSP
-                crl, // CRL
-                null // certs
-            );
-        }
+        List<String> signatureNames = new SignatureUtil(pdfDocument).getSignatureNames();
+        String signatureName = signatureNames.get(signatureNames.size() - 1);
+        // Add the CRL/OCSP validation information to the DSS Dictionary
+        boolean addVerification = validation.addVerification(signatureName, ocsp, crl, null);
 
         validation.merge(); // Merges the validation with any validation already in the document or creates a new one.
-
-        reader.close();
-        writer.close();
-
-        // Save to (same) file
-        OutputStream outputStream = new FileOutputStream(outputFilePath);
-        byteArrayOutputStream.writeTo(outputStream);
 
         if (Soap._debugMode) {
             if (addVerification) {
@@ -320,8 +304,12 @@ public class PDF {
             }
         }
 
-//        byteArrayOutputStream.close();
-        outputStream.close();
+        pdfDocument.close();
+
+        boolean delete = new File(outputFileTempPath).delete();
+        if (delete) {
+            System.out.println("\nTemp file deleted.");
+        }
     }
 
     public void close() {
@@ -329,7 +317,7 @@ public class PDF {
             pdfReader.close();
             pdfWriter.close();
         } catch (IOException e) {
-            System.err.printf("Failed to close PDF reader. Reason: %s", e.getMessage());
+            System.err.printf("Failed to close PDF reader or writer. Reason: %s", e.getMessage());
         }
     }
 }
