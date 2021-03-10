@@ -5,10 +5,10 @@ import java.util.Optional;
 
 public enum CliArgument {
     INIT("init"), INPUT("input"), OUTPUT("output"), SUFFIX("suffix"), CONFIG("config"), HELP("help"),
-    TYPE("type"), DISTINGUISHED_NAME("dn"), STEP_UP_MSISDN("stepupmsisdn"), STEP_UP_MSG("stepupmsg"),
-    STEP_UP_LANG("stepuplang"), STEP_UP_SERIAL_NO("stepupserialnumber"), REASON("reason"), LOCATION("location"),
-    CONTACT("contact"), CERTIFICATION_LEVEL("certlevel"), BASIC_VERBOSITY("v"), MEDIUM_VERBOSITY("vv"),
-    HIGH_VERBOSITY("vvv");
+    SIGNATURE_TYPE("type"), DISTINGUISHED_NAME("dn"), STEP_UP_MSISDN("stepupmsisdn"), STEP_UP_MESSAGE("stepupmsg"),
+    STEP_UP_LANGUAGE("stepuplang"), STEP_UP_SERIAL_NO("stepupserialnumber"), SIGNATURE_REASON("reason"),
+    SIGNATURE_LOCATION("location"), SIGNATURE_CONTACT_INFO("contact"), CERTIFICATION_LEVEL("certlevel"),
+    BASIC_VERBOSITY("v"), MEDIUM_VERBOSITY("vv"), HIGH_VERBOSITY("vvv");
 
     private final String argValue;
 

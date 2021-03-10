@@ -10,78 +10,138 @@ public class ArgumentsContext {
     private String outputFile;
     private String suffix;
     private String configFile;
-    private SignatureType signatureType;
     private String distinguishedName;
     private String stepUpMsisdn;
-    private String stepUpMsg;
-    private String stepUpLang;
+    private String stepUpMessage;
+    private String stepUpLanguage;
     private String stepUpSerialNo;
-    private String reason;
-    private String location;
-    private String contact;
-    private String certificationLevel;
-    private VerbosityLevel verbosityLevel = VerbosityLevel.LOW;
+    private SignatureType signatureType;
+    private String signatureReason;
+    private String signatureLocation;
+    private String signatureContactInfo;
+    private int certificationLevel;
+    private VerboseLevel verboseLevel = VerboseLevel.LOW;
 
-    public void addInputFile(String inputFile) {
-        inputFiles.add(inputFile);
+    public List<String> getInputFiles() {
+        return inputFiles;
+    }
+
+    public String getOutputFile() {
+        return outputFile;
     }
 
     public void setOutputFile(String outputFile) {
         this.outputFile = outputFile;
     }
 
+    public String getSuffix() {
+        return suffix;
+    }
+
     public void setSuffix(String suffix) {
         this.suffix = suffix;
+    }
+
+    public String getConfigFile() {
+        return configFile;
     }
 
     public void setConfigFile(String configFile) {
         this.configFile = configFile;
     }
 
+    public SignatureType getSignatureType() {
+        return signatureType;
+    }
+
     public void setSignatureType(SignatureType signatureType) {
         this.signatureType = signatureType;
+    }
+
+    public String getDistinguishedName() {
+        return distinguishedName;
     }
 
     public void setDistinguishedName(String distinguishedName) {
         this.distinguishedName = distinguishedName;
     }
 
+    public String getStepUpMsisdn() {
+        return stepUpMsisdn;
+    }
+
     public void setStepUpMsisdn(String stepUpMsisdn) {
         this.stepUpMsisdn = stepUpMsisdn;
     }
 
-    public void setStepUpMsg(String stepUpMsg) {
-        this.stepUpMsg = stepUpMsg;
+    public String getStepUpMessage() {
+        return stepUpMessage;
     }
 
-    public void setStepUpLang(String stepUpLang) {
-        this.stepUpLang = stepUpLang;
+    public void setStepUpMessage(String stepUpMessage) {
+        this.stepUpMessage = stepUpMessage;
+    }
+
+    public String getStepUpLanguage() {
+        return stepUpLanguage;
+    }
+
+    public void setStepUpLanguage(String stepUpLanguage) {
+        this.stepUpLanguage = stepUpLanguage;
+    }
+
+    public String getStepUpSerialNo() {
+        return stepUpSerialNo;
     }
 
     public void setStepUpSerialNo(String stepUpSerialNo) {
         this.stepUpSerialNo = stepUpSerialNo;
     }
 
-    public void setReason(String reason) {
-        this.reason = reason;
+    public String getSignatureReason() {
+        return signatureReason;
     }
 
-    public void setLocation(String location) {
-        this.location = location;
+    public void setSignatureReason(String signatureReason) {
+        this.signatureReason = signatureReason;
     }
 
-    public void setContact(String contact) {
-        this.contact = contact;
+    public String getSignatureLocation() {
+        return signatureLocation;
     }
 
-    public void setCertificationLevel(String certificationLevel) {
+    public void setSignatureLocation(String signatureLocation) {
+        this.signatureLocation = signatureLocation;
+    }
+
+    public String getSignatureContactInfo() {
+        return signatureContactInfo;
+    }
+
+    public void setSignatureContactInfo(String signatureContactInfo) {
+        this.signatureContactInfo = signatureContactInfo;
+    }
+
+    public int getCertificationLevel() {
+        return certificationLevel;
+    }
+
+    public void setCertificationLevel(int certificationLevel) {
         this.certificationLevel = certificationLevel;
     }
 
-    public void setVerbosityLevel(VerbosityLevel verbosityLevel) {
-        if (this.verbosityLevel.getImportance() < verbosityLevel.getImportance()) {
-            this.verbosityLevel = verbosityLevel;
+    public VerboseLevel getVerboseLevel() {
+        return verboseLevel;
+    }
+
+    public void setVerboseLevel(VerboseLevel verboseLevel) {
+        if (this.verboseLevel.getImportance() < verboseLevel.getImportance()) {
+            this.verboseLevel = verboseLevel;
         }
+    }
+
+    public void addInputFile(String inputFile) {
+        inputFiles.add(inputFile);
     }
 
     @Override
@@ -96,17 +156,18 @@ public class ArgumentsContext {
         return Objects.equals(inputFiles, that.inputFiles) && Objects.equals(outputFile, that.outputFile) && Objects
             .equals(suffix, that.suffix) && Objects.equals(configFile, that.configFile) && signatureType == that.signatureType
                && Objects.equals(distinguishedName, that.distinguishedName) && Objects.equals(stepUpMsisdn, that.stepUpMsisdn)
-               && Objects.equals(stepUpMsg, that.stepUpMsg) && Objects.equals(stepUpLang, that.stepUpLang) && Objects
-                   .equals(stepUpSerialNo, that.stepUpSerialNo) && Objects.equals(reason, that.reason) && Objects
-                   .equals(location, that.location) && Objects.equals(contact, that.contact) && Objects
-                   .equals(certificationLevel, that.certificationLevel) && verbosityLevel == that.verbosityLevel;
+               && Objects.equals(stepUpMessage, that.stepUpMessage) && Objects.equals(stepUpLanguage, that.stepUpLanguage) && Objects
+                   .equals(stepUpSerialNo, that.stepUpSerialNo) && Objects.equals(signatureReason, that.signatureReason) && Objects
+                   .equals(signatureLocation, that.signatureLocation) && Objects.equals(signatureContactInfo, that.signatureContactInfo) && Objects
+                   .equals(certificationLevel, that.certificationLevel) && verboseLevel == that.verboseLevel;
     }
 
     @Override
     public int hashCode() {
         return Objects
-            .hash(inputFiles, outputFile, suffix, configFile, signatureType, distinguishedName, stepUpMsisdn, stepUpMsg, stepUpLang, stepUpSerialNo,
-                  reason, location, contact, certificationLevel, verbosityLevel);
+            .hash(inputFiles, outputFile, suffix, configFile, signatureType, distinguishedName, stepUpMsisdn, stepUpMessage, stepUpLanguage,
+                  stepUpSerialNo,
+                  signatureReason, signatureLocation, signatureContactInfo, certificationLevel, verboseLevel);
     }
 
     @Override
@@ -119,14 +180,14 @@ public class ArgumentsContext {
                ", signatureType=" + signatureType +
                ", distinguishedName='" + distinguishedName + '\'' +
                ", stepUpMsisdn='" + stepUpMsisdn + '\'' +
-               ", stepUpMsg='" + stepUpMsg + '\'' +
-               ", stepUpLang='" + stepUpLang + '\'' +
+               ", stepUpMsg='" + stepUpMessage + '\'' +
+               ", stepUpLang='" + stepUpLanguage + '\'' +
                ", stepUpSerialNo='" + stepUpSerialNo + '\'' +
-               ", reason='" + reason + '\'' +
-               ", location='" + location + '\'' +
-               ", contact='" + contact + '\'' +
+               ", reason='" + signatureReason + '\'' +
+               ", location='" + signatureLocation + '\'' +
+               ", contact='" + signatureContactInfo + '\'' +
                ", certificationLevel='" + certificationLevel + '\'' +
-               ", verbosityLevel=" + verbosityLevel +
+               ", verbosityLevel=" + verboseLevel +
                '}';
     }
 }

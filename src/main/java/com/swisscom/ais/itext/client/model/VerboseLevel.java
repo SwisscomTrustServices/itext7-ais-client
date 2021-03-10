@@ -1,11 +1,11 @@
 package com.swisscom.ais.itext.client.model;
 
-public enum VerbosityLevel {
+public enum VerboseLevel {
     LOW(0), BASIC(1), MEDIUM(2), HIGH(3);
 
     private final int importance;
 
-    private VerbosityLevel(int importance) {
+    private VerboseLevel(int importance) {
         this.importance = importance;
     }
 

@@ -29,8 +29,10 @@ package com.swisscom.ais.itext.client;
 import com.swisscom.ais.itext.Include;
 import com.swisscom.ais.itext.Soap;
 import com.swisscom.ais.itext.client.common.AisClientException;
+import com.swisscom.ais.itext.client.config.LogbackConfiguration;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
 import com.swisscom.ais.itext.client.model.ArgumentsContext;
+import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.service.ArgumentsService;
 import com.swisscom.ais.itext.client.utils.FileUtils;
 
@@ -138,31 +140,44 @@ public class SignPdfCli {
         ClientVersionProvider versionProvider = new ClientVersionProvider();
         versionProvider.init();
 
-        SignPdfCli ais = new SignPdfCli();
+        ArgumentsService argumentsService = new ArgumentsService(versionProvider);
+
+        Optional<ArgumentsContext> argumentsContext = buildArgumentsContext(argumentsService, args);
+        argumentsContext.ifPresent(SignPdfCli::performSigning);
+    }
+
+    private static Optional<ArgumentsContext> buildArgumentsContext(ArgumentsService argumentsService, String[] args) {
         try {
-            Optional<ArgumentsContext>
-                argumentsContext =
-                new ArgumentsService(versionProvider).parseArguments(args, new File(StringUtils.EMPTY).getAbsolutePath());
-            ais.runSigning(args);
+            return argumentsService.parseArguments(args, new File(StringUtils.EMPTY).getAbsolutePath());
         } catch (Exception e) {
-            if (debugMode || verboseMode) {
+            if (argumentsService.isVerboseLevelActive()) {
                 e.printStackTrace();
             }
             System.exit(1);
+            return Optional.empty();
         }
+    }
 
+    private static void performSigning(ArgumentsContext argumentsContext) {
+        new LogbackConfiguration().init(argumentsContext.getVerboseLevel());
+
+        try {
+            // todo
+            new SignPdfCli().runSigning();
+        } catch (Exception e) {
+            if (!argumentsContext.getVerboseLevel().equals(VerboseLevel.LOW)) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
      * Parse given parameters, check if all necessary parameters exist and if there are not unnecessary parameters.
      * If there are problems with parameters application will abort with exit code 1.
      * After all checks are done signing process will start.
-     *
-     * @param args argument list as described for main method
      */
-    public void runSigning(String[] args) throws Exception {
-        parseArguments(args);
-        checkNecessaryArguments();
+    public void runSigning() throws Exception {
+        // todo add a validation for each signature type before the document is started to be signed
         checkUnnecessaryArguments();
 
         //parse signature
@@ -181,160 +196,6 @@ public class SignPdfCli {
         dss_soap
             .sign(signature, pdfToSign, signedPDF, signingReason, signingLocation, signingContact, certificationLevel, distinguishedName, msisdn, msg,
                   language, serialnumber);
-    }
-
-    private void showHelp() {
-        showHelp(null);
-    }
-
-    private void showHelp(String errorMessage) {
-        if (Objects.nonNull(errorMessage)) {
-            printError(errorMessage);
-        }
-        String usageText = FileUtils.readUsageText();
-//        if (versionProvider.isVersionInfoAvailable()) {
-//            usageText = usageText.replace(VERSION_INFO_PLACEHOLDER, versionProvider.getVersionInfo());
-//        }
-        System.out.println(usageText);
-    }
-
-    private void printError(String error) {
-        if (StringUtils.isNotBlank(error)) {
-            System.out.println("Error: " + error);
-        }
-    }
-
-    /**
-     * Parse given arguments. If an error occurs application with exit with code 1.
-     * If debug and/or verbose mode is set, an error message will be shown.
-     */
-    private void parseArguments(String[] args) throws Exception {
-
-        // args can never be null. It would just be of size zero.
-
-        String param;
-        boolean type = false, infile = false, outfile = false;
-        for (int i = 0; i < args.length; i++) {
-
-            param = args[i].toLowerCase();
-
-            if (param.contains("-type=")) {
-                String signatureString = null;
-                try {
-                    signatureString = args[i].substring(args[i].indexOf("=") + 1).trim().toUpperCase();
-                    signature = Include.Signature.valueOf(signatureString);
-                    type = true;
-                } catch (IllegalArgumentException e) {
-                    if (debugMode || verboseMode) {
-                        printError(signatureString + " is not a valid signature.");
-                    }
-                    showHelp();
-                }
-            } else if (param.contains("-infile=")) {
-                pdfToSign = args[i].substring(args[i].indexOf("=") + 1).trim();
-                File pdfToSignFile = new File(pdfToSign);
-                if (!pdfToSignFile.isFile() || !pdfToSignFile.canRead()) {
-                    if (debugMode || verboseMode) {
-                        printError("File " + pdfToSign + " is not a file or can not be read.");
-                    }
-                    throw new Exception("File " + pdfToSign + " is not a file or can not be read.");
-                }
-                infile = true;
-            } else if (param.contains("-outfile=")) {
-                signedPDF = args[i].substring(args[i].indexOf("=") + 1).trim();
-                String errorMsg = null;
-                if (signedPDF.equals(pdfToSign)) {
-                    errorMsg = "Source file equals target file.";
-                } else if (new File(signedPDF).isFile()) {
-                    errorMsg = "Target file exists.";
-                } else {
-                    try {
-                        new File(signedPDF);
-                    } catch (Exception e) {
-                        errorMsg = "Can not create target file in given path.";
-                    }
-                }
-                if (errorMsg != null) {
-                    if (debugMode || verboseMode) {
-                        printError(errorMsg);
-                    }
-                    throw new Exception(errorMsg);
-                }
-                outfile = true;
-            } else if (param.contains("-reason")) {
-                signingReason = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-location")) {
-                signingLocation = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-contact")) {
-                signingContact = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-certlevel")) {
-                try {
-                    certificationLevel = Integer.parseInt(args[i].substring(args[i].indexOf("=") + 1).trim());
-                    if (certificationLevel < 1 || certificationLevel > 3) {
-                        throw new Exception();
-                    }
-                } catch (Exception e) {
-                    if (debugMode || verboseMode) {
-                        showHelp("-certlevel value not between 1..3");
-                    }
-                }
-            } else if (param.contains("-dn=")) {
-                distinguishedName = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-stepupmsisdn=")) {
-                msisdn = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-stepupmsg=")) {
-                msg = args[i].substring(args[i].indexOf("=") + 1).trim();
-                String transId = getNewTransactionId();
-                msg = msg.replaceAll("#TRANSID#", transId);
-            } else if (param.contains("-stepuplang=")) {
-                language = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-stepupserialnumber=")) {
-                serialnumber = args[i].substring(args[i].indexOf("=") + 1).trim();
-            } else if (param.contains("-config=")) {
-                propertyFilePath = args[i].substring(args[i].indexOf("=") + 1).trim();
-                File propertyFile = new File(propertyFilePath);
-                if (!propertyFile.isFile() || !propertyFile.canRead()) {
-                    if (debugMode || verboseMode) {
-                        printError("Property file path is set but file does not exist or can not read it: " + propertyFilePath);
-                    }
-                    throw new Exception("Property file path is set but file does not exist or can not read it: " + propertyFilePath);
-                }
-            } else if (args[i].toLowerCase().contains("-vv")) {
-                debugMode = true;
-            } else if (param.contains("-v")) {
-                verboseMode = true;
-            }
-        }
-
-        // Check existence of mandatory arguments
-        if (!type) {
-            showHelp("Mandatory option -type is missing");
-        } else if (!infile) {
-            showHelp("Mandatory option -infile is missing");
-        } else if (!outfile) {
-            showHelp("Mandatory option -outfile is missing");
-        }
-
-    }
-
-    /**
-     * Check if needed parameters are given. If not method will print an error and exit with code 1
-     */
-    private void checkNecessaryArguments() throws Exception {
-
-        if (pdfToSign == null) {
-            if (debugMode || verboseMode) {
-                printError("Input file does not exist.");
-            }
-            throw new Exception("Input file does not exist.");
-        }
-
-        if (signedPDF == null) {
-            if (debugMode || verboseMode) {
-                printError("Output file does not exist.");
-            }
-            throw new Exception("Output file does not exist.");
-        }
     }
 
     /**
@@ -360,14 +221,24 @@ public class SignPdfCli {
         }
     }
 
-    /**
-     * Return a unique transaction id
-     *
-     * @return transaction id
-     */
-    private String getNewTransactionId() {
-        // secure, easy but a little bit more expensive way to get a random alphanumeric string
-        return new BigInteger(30, new SecureRandom()).toString(32);
+    private void showHelp() {
+        showHelp(null);
     }
 
+    private void showHelp(String errorMessage) {
+        if (Objects.nonNull(errorMessage)) {
+            printError(errorMessage);
+        }
+        String usageText = FileUtils.readUsageText();
+//        if (versionProvider.isVersionInfoAvailable()) {
+//            usageText = usageText.replace(VERSION_INFO_PLACEHOLDER, versionProvider.getVersionInfo());
+//        }
+        System.out.println(usageText);
+    }
+
+    private void printError(String error) {
+        if (StringUtils.isNotBlank(error)) {
+            System.out.println("Error: " + error);
+        }
+    }
 }
