@@ -41,6 +41,7 @@ public class AisClientConfiguration {
         this.signaturePollingRounds = signaturePollingRounds;
     }
 
+    @SuppressWarnings("unused")
     public void setFromPropertiesClasspathFile(String fileName) {
         try {
             Properties properties = new Properties();

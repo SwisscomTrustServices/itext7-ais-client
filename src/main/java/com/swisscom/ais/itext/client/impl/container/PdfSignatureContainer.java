@@ -1,4 +1,4 @@
-package com.swisscom.ais.itext.container;
+package com.swisscom.ais.itext.client.impl.container;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.signatures.IExternalSignatureContainer;

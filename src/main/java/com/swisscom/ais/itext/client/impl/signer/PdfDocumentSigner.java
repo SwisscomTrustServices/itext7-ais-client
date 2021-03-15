@@ -1,4 +1,4 @@
-package com.swisscom.ais.itext.signer;
+package com.swisscom.ais.itext.client.impl.signer;
 
 import com.itextpdf.kernel.PdfException;
 import com.itextpdf.kernel.pdf.PdfDate;

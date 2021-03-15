@@ -20,7 +20,7 @@
  * Swisscom (Schweiz) AG
  */
 
-package com.swisscom.ais.itext;
+package com.swisscom.ais.itext.client.impl;
 
 /**
  * Defines enums

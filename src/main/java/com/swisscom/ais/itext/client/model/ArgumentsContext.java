@@ -15,7 +15,7 @@ public class ArgumentsContext {
     private String stepUpMessage;
     private String stepUpLanguage;
     private String stepUpSerialNo;
-    private SignatureType signatureType;
+    private Signature signatureType;
     private String signatureReason;
     private String signatureLocation;
     private String signatureContactInfo;
@@ -50,11 +50,11 @@ public class ArgumentsContext {
         this.configFile = configFile;
     }
 
-    public SignatureType getSignatureType() {
+    public Signature getSignatureType() {
         return signatureType;
     }
 
-    public void setSignatureType(SignatureType signatureType) {
+    public void setSignatureType(Signature signatureType) {
         this.signatureType = signatureType;
     }
 

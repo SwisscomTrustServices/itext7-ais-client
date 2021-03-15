@@ -3,7 +3,7 @@ package com.swisscom.ais.itext.client.service;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
 import com.swisscom.ais.itext.client.model.ArgumentsContext;
 import com.swisscom.ais.itext.client.model.CliArgument;
-import com.swisscom.ais.itext.client.model.SignatureType;
+import com.swisscom.ais.itext.client.model.Signature;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.utils.FileUtils;
 
@@ -152,10 +152,9 @@ public class ArgumentsService {
 
     private String extractNextArgument(Iterator<String> argsIterator) {
         String currentArg = argsIterator.next().toLowerCase();
-        if (!currentArg.startsWith(ARG_PREFIX_1) || !currentArg.startsWith(ARG_PREFIX_2)) {
-            throw new IllegalArgumentException(String.format(
-                "Invalid argument provided! The argument '%s' must starts with one of the prefixes: '%s' or '%s'.", currentArg, ARG_PREFIX_1,
-                ARG_PREFIX_2));
+        if (!(currentArg.startsWith(ARG_PREFIX_1) || currentArg.startsWith(ARG_PREFIX_2))) {
+            throw new IllegalArgumentException(String.format("Invalid argument provided! The argument '%s' must starts with one of the prefixes: "
+                                                             + "'%s' or '%s'.", currentArg, ARG_PREFIX_1, ARG_PREFIX_2));
         }
         return currentArg.startsWith(ARG_PREFIX_1) ? currentArg.substring(1) : currentArg.substring(2);
     }
@@ -225,8 +224,8 @@ public class ArgumentsService {
         printErrorMessage(message, true);
     }
 
-    private void setSignatureType(String signatureTypeValue, Consumer<SignatureType> signatureTypeConsumer) {
-        Optional<SignatureType> signatureType = SignatureType.getByTypeValue(signatureTypeValue);
+    private void setSignatureType(String signatureTypeValue, Consumer<Signature> signatureTypeConsumer) {
+        Optional<Signature> signatureType = Signature.getByTypeValue(signatureTypeValue.toLowerCase());
         if (!signatureType.isPresent()) {
             String message = String.format(ILLEGAL_ARGUMENT_MESSAGE, signatureTypeValue);
             printErrorMessage(message, true);
@@ -264,7 +263,7 @@ public class ArgumentsService {
         if (ObjectUtils.allNotNull(context.getOutputFile(), context.getSuffix())) {
             printErrorMessage("Both output and suffix are configured. Only one of them can be used.", true);
         }
-        if (Objects.nonNull(context.getOutputFile()) && !context.getInputFiles().isEmpty()) {
+        if (Objects.nonNull(context.getOutputFile()) && context.getInputFiles().size() > 1) {
             printErrorMessage("Cannot use output with multiple input files. Please use suffix instead.", true);
         }
         if (Objects.isNull(context.getSignatureType())) {

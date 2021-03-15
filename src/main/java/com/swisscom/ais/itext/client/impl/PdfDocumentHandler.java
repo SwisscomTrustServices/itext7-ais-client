@@ -1,13 +1,13 @@
-package com.swisscom.ais.itext;
+package com.swisscom.ais.itext.client.impl;
 
-import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.signatures.*;
 import com.itextpdf.io.codec.Base64;
-import com.swisscom.ais.itext.container.PdfHashSignatureContainer;
-import com.swisscom.ais.itext.container.PdfSignatureContainer;
-import com.swisscom.ais.itext.signer.PdfDocumentSigner;
-
-import javax.annotation.Nonnull;
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.signatures.LtvVerification;
+import com.itextpdf.signatures.PdfSigner;
+import com.itextpdf.signatures.SignatureUtil;
+import com.swisscom.ais.itext.client.impl.container.PdfHashSignatureContainer;
+import com.swisscom.ais.itext.client.impl.container.PdfSignatureContainer;
+import com.swisscom.ais.itext.client.impl.signer.PdfDocumentSigner;
 
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -18,81 +18,27 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.util.*;
 
-public class PDF implements Closeable {
+import javax.annotation.Nonnull;
 
-    /**
-     * Save file path from input file
-     */
-    private String inputFilePath;
+public class PdfDocumentHandler implements Closeable {
 
-    /**
-     * Save file path from output file
-     */
-    private String outputFilePath;
+    private final String inputFilePath;
+    private final String outputFilePath;
+    private final String pdfPassword;
+    private final String signReason;
+    private final String signLocation;
+    private final String signContact;
+    private final int certificationLevel;
+
     private String outputFileTempPath;
-
-    /**
-     * Save password from pdf
-     */
-    private String pdfPassword;
-
-    /**
-     * Save signing reason
-     */
-    private int certificationLevel = 0;
-
-    /**
-     * Save signing reason
-     */
-    private String signReason;
-
-    /**
-     * Save signing location
-     */
-    private String signLocation;
-
-    /**
-     * Save signing contact
-     */
-    private String signContact;
-
-    /**
-     * Save PdfReader
-     */
     private PdfReader pdfReader;
-
     private PdfWriter pdfWriter;
-
+    private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
-
     private PdfDocument pdfDocument;
-    /**
-     * Save signature appearance from pdf
-     */
-    private PdfSignatureAppearance pdfSignatureAppearance;
 
-    /**
-     * Save pdf signature
-     */
-    private PdfSignature pdfSignature;
-
-    /**
-     * Save byte array output stream for writing pdf file
-     */
-    private ByteArrayOutputStream byteArrayOutputStream;
-
-    /**
-     * Set parameters
-     *
-     * @param inputFilePath  Path from input file
-     * @param outputFilePath Path from output file
-     * @param pdfPassword    Password form pdf
-     * @param signReason     Reason from signing
-     * @param signLocation   Location for frOn signing
-     * @param signContact    Contact for signing
-     */
-    PDF(@Nonnull String inputFilePath, @Nonnull String outputFilePath, String pdfPassword, String signReason, String signLocation, String signContact,
-        int certificationLevel) {
+    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, String pdfPassword, String signReason, String signLocation,
+                       String signContact, int certificationLevel) {
         this.inputFilePath = inputFilePath;
         this.outputFilePath = outputFilePath;
         this.pdfPassword = pdfPassword;
@@ -102,11 +48,6 @@ public class PDF implements Closeable {
         this.certificationLevel = certificationLevel;
     }
 
-    /**
-     * Get file path of pdf to sign
-     *
-     * @return Path from pdf to sign
-     */
     public String getInputFilePath() {
         return inputFilePath;
     }
@@ -125,13 +66,13 @@ public class PDF implements Closeable {
         SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
         boolean hasSignature = signatureUtil.getSignatureNames().size() > 0;
 
-        byteArrayOutputStream = new ByteArrayOutputStream();
-        pdfWriter = new PdfWriter(byteArrayOutputStream, new WriterProperties().addXmpMetadata().setPdfVersion(PdfVersion.PDF_1_0));
+        inMemoryStream = new ByteArrayOutputStream();
+        pdfWriter = new PdfWriter(inMemoryStream, new WriterProperties().addXmpMetadata().setPdfVersion(PdfVersion.PDF_1_0));
         StampingProperties stampingProperties = new StampingProperties();
         pdfReader = createPdfReader();
         pdfSigner = new PdfDocumentSigner(pdfReader, pdfWriter, hasSignature ? stampingProperties.useAppendMode() : stampingProperties);
 
-        pdfSignatureAppearance = pdfSigner.getSignatureAppearance()
+        pdfSigner.getSignatureAppearance()
             .setReason(getOptionalAttribute(signReason))
             .setLocation(getOptionalAttribute(signLocation))
             .setContact(getOptionalAttribute(signContact));
@@ -140,8 +81,8 @@ public class PDF implements Closeable {
         if (certificationLevel > 0) {
             // check: at most one certification per pdf is allowed
             if (pdfSigner.getCertificationLevel() != PdfSigner.NOT_CERTIFIED) {
-                throw new Exception(
-                    "Could not apply -certlevel option. At most one certification per pdf is allowed, but source pdf contained already a certification.");
+                throw new Exception("Could not apply certification level option. At most one certification per pdf is allowed, but source pdf"
+                                    + " contained already a certification.");
             }
             pdfSigner.setCertificationLevel(certificationLevel);
         }
@@ -190,14 +131,14 @@ public class PDF implements Closeable {
 
         outputFileTempPath = Files.createTempFile("signed", "-temp.pdf").toString();
         OutputStream outputStream = new FileOutputStream(outputFileTempPath);
-        byteArrayOutputStream.writeTo(outputStream);
+        inMemoryStream.writeTo(outputStream);
 
         if (Soap._debugMode) {
             System.out.println("\nOK writing signature to " + outputFileTempPath);
         }
 
         pdfDocument.close();
-        byteArrayOutputStream.close();
+        inMemoryStream.close();
         outputStream.close();
     }
 
@@ -266,7 +207,7 @@ public class PDF implements Closeable {
         PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode());
         LtvVerification validation = new LtvVerification(pdfDocument);
 
-        // remove the for-statement because we want to add the recovation information to the latest signature only.
+        // remove the for-statement because we want to add the revocation information to the latest signature only.
         List<String> signatureNames = new SignatureUtil(pdfDocument).getSignatureNames();
         String signatureName = signatureNames.get(signatureNames.size() - 1);
         // Add the CRL/OCSP validation information to the DSS Dictionary
