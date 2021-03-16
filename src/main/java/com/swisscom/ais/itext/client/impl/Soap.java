@@ -72,7 +72,10 @@ import org.xml.sax.SAXException;
 import com.itextpdf.io.codec.Base64;
 import com.swisscom.ais.itext.client.impl.Include.RequestType;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
-import com.swisscom.ais.itext.client.model.Signature;
+import com.swisscom.ais.itext.client.model.DigestAlgorithm;
+import com.swisscom.ais.itext.client.model.PdfMetadata;
+import com.swisscom.ais.itext.client.model.SignatureMode;
+import com.swisscom.ais.itext.client.model.UserData;
 
 public class Soap {
 
@@ -172,12 +175,12 @@ public class Soap {
      */
     private void setConnectionProperties() {
 
-        this._clientCertPath = properties.getProperty("CERT_FILE");
-        this._privateKeyName = properties.getProperty("CERT_KEY");
-        this._serverCertPath = properties.getProperty("SSL_CA");
+        this._clientCertPath = properties.getProperty("client.cert.file");
+        this._privateKeyName = properties.getProperty("client.auth.keyFile");
+        this._serverCertPath = properties.getProperty("server.cert.file");
         this._url = properties.getProperty("URL");
         try {
-            this._timeout = Integer.parseInt(properties.getProperty("TIMEOUT_CON"));
+            this._timeout = Integer.parseInt(properties.getProperty("client.http.connectionTimeoutInSeconds"));
             this._timeout *= 1000;
         } catch (NumberFormatException e) {
             this._timeout = 90 * 1000;
@@ -188,40 +191,34 @@ public class Soap {
     /**
      * Read signing options from properties. Depending on parameters here will be decided which type of signature will be used.
      *
-     * @param signatureType     Type of signature e.g. timestamp, ondemand or static
-     * @param fileIn            File path of input pdf document
-     * @param fileOut           File path of output pdf document which will be the signed one
-     * @param signingReason     Reason for signing a document
-     * @param signingLocation   Location where a document was signed
-     * @param signingContact    Person who signed document
-     * @param distinguishedName Information about signer e.g. name, country etc.
-     * @param msisdn            Mobile id for sending message to signer
-     * @param msg               Message which will be send to signer if msisdn is set
-     * @param language          Language of message
+     * @param signatureType Type of signature e.g. timestamp, ondemand or static
      * @throws Exception If parameters are not set or signing failed
      */
-    public void sign(@Nonnull Signature signatureType, @Nonnull String fileIn, @Nonnull String fileOut,
-                     @Nullable String signingReason, @Nullable String signingLocation, @Nullable String signingContact,
-                     @Nullable int certificationLevel, @Nullable String distinguishedName, @Nullable String msisdn,
-                     @Nullable String msg, @Nullable String language, @Nullable String serialnumber)
-        throws Exception {
+    public void sign(@Nonnull SignatureMode signatureType, @Nonnull PdfMetadata metadata, @Nonnull UserData userData) throws Exception {
 
         // LATER throw a specific Exception and not the generic one
-        Include.HashAlgorithm hashAlgo = Include.HashAlgorithm.valueOf(properties.getProperty("DIGEST_METHOD").trim().toUpperCase());
+        DigestAlgorithm hashAlgo = metadata.getDigestAlgorithm();
 
-        String claimedIdentity = properties.getProperty("CUSTOMER");
-        String claimedIdentityPropName = signatureType.equals(Signature.ON_DEMAND) || signatureType.equals(Signature.ON_DEMAND_WITH_STEP_UP) ?
-                                         "KEY_ONDEMAND" : signatureType.equals(Signature.STATIC) ? "KEY_STATIC" : null;
-        if (claimedIdentityPropName != null) {
-            claimedIdentity = claimedIdentity.concat(":" + properties.getProperty(claimedIdentityPropName));
+        String claimedIdentity = userData.getClaimedIdentityName();
+        if (!signatureType.equals(SignatureMode.TIMESTAMP)) {
+            claimedIdentity = claimedIdentity.concat(":" + userData.getClaimedIdentityKey());
         }
 
-        PdfDocumentHandler pdf = new PdfDocumentHandler(fileIn, fileOut, null, signingReason, signingLocation, signingContact, certificationLevel);
+        PdfDocumentHandler
+            pdf =
+            new PdfDocumentHandler(metadata.getInputFilePath(), metadata.getOutputFilePath(), null, userData.getSignatureReason(),
+                                   userData.getSignatureLocation(), userData.getSignatureContactInfo(),
+                                   userData.getSignatureName(), 0);
 
         try {
             String requestId = getRequestId();
 
-            if (msisdn != null && msg != null && language != null && signatureType.equals(Signature.ON_DEMAND_WITH_STEP_UP)) {
+            String distinguishedName = userData.getDistinguishedName();
+            String msisdn = userData.getStepUpMsisdn();
+            String msg = userData.getStepUpMessage();
+            String language = userData.getStepUpLanguage();
+            String serialnumber = userData.getStepUpSerialNumber();
+            if (msisdn != null && msg != null && language != null && signatureType.equals(SignatureMode.ON_DEMAND_WITH_STEP_UP)) {
 
                 // On-Demand signature WITH step-up
                 if (_debugMode) {
@@ -275,7 +272,7 @@ public class Soap {
                     TimeUnit.MILLISECONDS.convert(aisConfig.getSignaturePollingIntervalInSeconds(), TimeUnit.SECONDS),
                     aisConfig.getSignaturePollingRounds());
 
-            } else if (signatureType.equals(Signature.ON_DEMAND)) {
+            } else if (signatureType.equals(SignatureMode.ON_DEMAND)) {
 
                 // On-Demand signature WITHOUT step-up
                 if (_debugMode) {
@@ -287,7 +284,7 @@ public class Soap {
                 signingTime.add(Calendar.MINUTE, 3);
                 signDocumentOnDemandCert(new PdfDocumentHandler[]{pdf}, hashAlgo, signingTime, _url, distinguishedName, claimedIdentity, requestId);
 
-            } else if (signatureType.equals(Signature.TIMESTAMP)) {
+            } else if (signatureType.equals(SignatureMode.TIMESTAMP)) {
 
                 // Timestamp only
                 if (_debugMode) {
@@ -296,7 +293,7 @@ public class Soap {
                 signDocumentTimestampOnly(new PdfDocumentHandler[]{pdf}, hashAlgo, Calendar.getInstance(), _url, claimedIdentity,
                                           requestId);
 
-            } else if (signatureType.equals(Signature.STATIC)) {
+            } else if (signatureType.equals(SignatureMode.STATIC)) {
 
                 // Static signature
                 if (_debugMode) {
@@ -332,7 +329,7 @@ public class Soap {
      * @throws Exception If hash or request can not be generated or document can not be signed.
      */
     private void signDocumentOnDemandCertStepUp(@Nonnull PdfDocumentHandler pdfs[], @Nonnull Calendar signDate,
-                                                @Nonnull Include.HashAlgorithm hashAlgo,
+                                                @Nonnull DigestAlgorithm hashAlgo,
                                                 @Nonnull String serverURI, @Nonnull String claimedIdentity,
                                                 @Nonnull String distinguishedName, @Nonnull String phoneNumber, @Nonnull String certReqMsg,
                                                 @Nonnull String certReqMsgLang, @Nonnull String certReqSerialNumber, String requestId,
@@ -358,10 +355,10 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getHashAlgorythm(), false);
+            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
         }
 
-        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getHashUri(), true,
+        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), true,
                                                      pdfHash, additionalProfiles,
                                                      claimedIdentity, Include.SignatureType.CMS.getSignatureType(), distinguishedName, phoneNumber,
                                                      certReqMsg, certReqMsgLang, certReqSerialNumber, null, requestId);
@@ -382,9 +379,9 @@ public class Soap {
      * @param requestId         An id for the request
      * @throws Exception If hash or request can not be generated or document can not be signed.
      */
-    private void signDocumentOnDemandCert(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull Include.HashAlgorithm hashAlgo, Calendar signDate,
-                                          @Nonnull String serverURI,
-                                          @Nonnull String distinguishedName, @Nonnull String claimedIdentity, String requestId)
+    private void signDocumentOnDemandCert(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull DigestAlgorithm hashAlgo, Calendar signDate,
+                                          @Nonnull String serverURI, @Nonnull String distinguishedName, @Nonnull String claimedIdentity,
+                                          String requestId)
         throws Exception {
 
         String[] additionalProfiles;
@@ -400,10 +397,10 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getHashAlgorythm(), false);
+            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
         }
 
-        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getHashUri(), true,
+        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), true,
                                                      pdfHash, additionalProfiles,
                                                      claimedIdentity, Include.SignatureType.CMS.getSignatureType(), distinguishedName, null, null,
                                                      null, null, null, requestId);
@@ -422,7 +419,7 @@ public class Soap {
      * @param requestId       An id for the request
      * @throws Exception If hash or request can not be generated or document can not be signed.
      */
-    private void signDocumentStaticCert(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull Include.HashAlgorithm hashAlgo, Calendar signDate,
+    private void signDocumentStaticCert(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull DigestAlgorithm hashAlgo, Calendar signDate,
                                         @Nonnull String serverURI,
                                         @Nonnull String claimedIdentity, String requestId)
         throws Exception {
@@ -437,10 +434,10 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getHashAlgorythm(), false);
+            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
         }
 
-        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getHashUri(), false,
+        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), false,
                                                      pdfHash, additionalProfiles,
                                                      claimedIdentity, Include.SignatureType.CMS.getSignatureType(), null, null, null, null, null,
                                                      null, requestId);
@@ -459,7 +456,7 @@ public class Soap {
      * @param requestId       An id for the request
      * @throws Exception If hash or request can not be generated or document can not be signed.
      */
-    private void signDocumentTimestampOnly(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull Include.HashAlgorithm hashAlgo, Calendar signDate,
+    private void signDocumentTimestampOnly(@Nonnull PdfDocumentHandler[] pdfs, @Nonnull DigestAlgorithm hashAlgo, Calendar signDate,
                                            @Nonnull String serverURI, @Nonnull String claimedIdentity, String requestId)
         throws Exception {
 
@@ -478,10 +475,10 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getHashAlgorythm(), true);
+            pdfHash[i] = pdfs[i].getPdfHash(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), true);
         }
 
-        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getHashUri(), false,
+        SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), false,
                                                      pdfHash, additionalProfiles, claimedIdentity, signatureType.getSignatureType(),
                                                      null, null, null, null, null, null, requestId);
 

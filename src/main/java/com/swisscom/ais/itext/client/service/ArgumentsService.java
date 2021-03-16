@@ -3,12 +3,11 @@ package com.swisscom.ais.itext.client.service;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
 import com.swisscom.ais.itext.client.model.ArgumentsContext;
 import com.swisscom.ais.itext.client.model.CliArgument;
-import com.swisscom.ais.itext.client.model.Signature;
+import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.utils.FileUtils;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.File;
@@ -17,7 +16,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 public class ArgumentsService {
@@ -31,9 +29,7 @@ public class ArgumentsService {
         ImmutablePair.of("/cli/sign-pdf-sample.properties", "sign-pdf.properties"),
         ImmutablePair.of("/cli/sign-pdf-help.properties", "sign-pdf-help.properties"),
         ImmutablePair.of("/cli/logback-sample.xml", "logback.xml"));
-    private static final String ILLEGAL_ARGUMENT_MESSAGE = "The provided argument '%s' is not recognized. "
-                                                           + "Use -help argument to see the detailed options.";
-    private static final String TRANSACTION_ID_PLACEHOLDER = "#TRANSID#";
+
     private final ClientVersionProvider versionProvider;
     private boolean isVerboseLevelActive = false;
 
@@ -43,16 +39,13 @@ public class ArgumentsService {
 
     public Optional<ArgumentsContext> parseArguments(String[] args, String startDirPath) {
         Iterator<String> argsIterator = Arrays.stream(args).iterator();
-        ArgumentsContext argumentsContext = new ArgumentsContext();
+        ArgumentsContext.Builder argsContextBuilder = new ArgumentsContext.Builder();
 
         while (argsIterator.hasNext()) {
             String currentArg = extractNextArgument(argsIterator);
-            Optional<CliArgument> argument = CliArgument.getByArgumentValue(currentArg);
-            if (!argument.isPresent()) {
-                throw new IllegalArgumentException(String.format(ILLEGAL_ARGUMENT_MESSAGE, currentArg));
-            }
+            CliArgument argument = CliArgument.getByValue(currentArg);
 
-            switch (argument.get()) {
+            switch (argument) {
                 case INIT: {
                     writeHelperConfigFiles(startDirPath);
                     return Optional.empty();
@@ -62,88 +55,49 @@ public class ArgumentsService {
                     return Optional.empty();
                 }
                 case BASIC_VERBOSITY: {
-                    argumentsContext.setVerboseLevel(VerboseLevel.BASIC);
+                    argsContextBuilder.withVerboseLevel(VerboseLevel.BASIC);
                     isVerboseLevelActive = true;
                     break;
                 }
                 case MEDIUM_VERBOSITY: {
-                    argumentsContext.setVerboseLevel(VerboseLevel.MEDIUM);
+                    argsContextBuilder.withVerboseLevel(VerboseLevel.MEDIUM);
                     isVerboseLevelActive = true;
                     break;
                 }
                 case HIGH_VERBOSITY: {
-                    argumentsContext.setVerboseLevel(VerboseLevel.HIGH);
+                    argsContextBuilder.withVerboseLevel(VerboseLevel.HIGH);
                     isVerboseLevelActive = true;
                     break;
                 }
                 case INPUT: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::addInputFile, "Input file name is missing.", this::validateInputFile);
+                    extractAndAssignArgValue(argsIterator, argsContextBuilder::withInputFile, "Input file name is missing.", this::validateInputFile);
                     break;
                 }
                 case OUTPUT: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setOutputFile, "Output file name is missing.",
-                                             outputFileName -> validateOutputFile(outputFileName, argumentsContext.getInputFiles()));
+                    extractAndAssignArgValue(argsIterator, argsContextBuilder::withOutputFile, "Output file name is missing.",
+                                             outputFileName -> validateOutputFile(outputFileName, argsContextBuilder.getInputFiles()));
                     break;
                 }
                 case SUFFIX: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setSuffix, "Suffix value is missing.");
+                    extractAndAssignArgValue(argsIterator, argsContextBuilder::withSuffix, "Suffix value is missing.");
                     break;
                 }
                 case CONFIG: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setConfigFile,
+                    extractAndAssignArgValue(argsIterator, argsContextBuilder::withConfigFile,
                                              "Config file name is missing. Use the -init argument to provide the sample config files.",
                                              this::validateInputFile);
                     break;
                 }
                 case SIGNATURE_TYPE: {
                     extractAndAssignArgValue(argsIterator,
-                                             signatureTypeValue -> setSignatureType(signatureTypeValue, argumentsContext::setSignatureType),
+                                             signatureValue -> argsContextBuilder.withSignature(SignatureMode.getByValue(signatureValue)),
                                              "Signature type value is missing");
-                    break;
-                }
-                case DISTINGUISHED_NAME: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setDistinguishedName, "Distinguished name value is missing.");
-                    break;
-                }
-                case STEP_UP_MSISDN: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setStepUpMsisdn, "StepUpMsisdn value is missing.");
-                    break;
-                }
-                case STEP_UP_MESSAGE: {
-                    extractAndAssignArgValue(argsIterator, stepUpMessage -> setStepUpMessage(stepUpMessage, argumentsContext::setStepUpMessage),
-                                             "StepUpMsg value is missing.");
-                    break;
-                }
-                case STEP_UP_LANGUAGE: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setStepUpLanguage, "StepUpLang value is missing.");
-                    break;
-                }
-                case STEP_UP_SERIAL_NO: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setStepUpSerialNo, "StepUpSerialNo value is missing.");
-                    break;
-                }
-                case SIGNATURE_REASON: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setSignatureReason, "Signature reason value is missing.");
-                    break;
-                }
-                case SIGNATURE_LOCATION: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setSignatureLocation, "Signature location value is missing.");
-                    break;
-                }
-                case SIGNATURE_CONTACT_INFO: {
-                    extractAndAssignArgValue(argsIterator, argumentsContext::setSignatureContactInfo, "Signature contact value is missing.");
-                    break;
-                }
-                case CERTIFICATION_LEVEL: {
-                    extractAndAssignArgValue(argsIterator,
-                                             certificationLevel -> setCertificationLevel(certificationLevel, argumentsContext::setCertificationLevel),
-                                             "Certification level value is missing.");
                     break;
                 }
             }
         }
-        validateContext(argumentsContext);
-        return Optional.of(argumentsContext);
+        validateContext(argsContextBuilder);
+        return Optional.of(argsContextBuilder.build());
     }
 
     public boolean isVerboseLevelActive() {
@@ -195,15 +149,14 @@ public class ArgumentsService {
             }
             argValueConsumer.accept(argValue);
         } else {
-            printErrorMessage(validationErrorMsg);
+            throw new IllegalArgumentException(validationErrorMsg);
         }
     }
 
     private void validateInputFile(String fileName) {
         File pdfToSign = new File(fileName);
         if (!pdfToSign.isFile() || !pdfToSign.canRead()) {
-            String message = String.format("File %s is not a file or can not be read.", pdfToSign.getAbsolutePath());
-            printErrorMessage(message, true);
+            throw new IllegalArgumentException(String.format("File %s is not a file or can not be read.", pdfToSign.getAbsolutePath()));
         }
     }
 
@@ -221,68 +174,29 @@ public class ArgumentsService {
                 message = "Can not create target file in given path.";
             }
         }
-        printErrorMessage(message, true);
-    }
-
-    private void setSignatureType(String signatureTypeValue, Consumer<Signature> signatureTypeConsumer) {
-        Optional<Signature> signatureType = Signature.getByTypeValue(signatureTypeValue.toLowerCase());
-        if (!signatureType.isPresent()) {
-            String message = String.format(ILLEGAL_ARGUMENT_MESSAGE, signatureTypeValue);
-            printErrorMessage(message, true);
-        }
-        signatureType.ifPresent(signatureTypeConsumer);
-    }
-
-    private void setStepUpMessage(String stepUpMessage, Consumer<String> argValueConsumer) {
-        argValueConsumer.accept(stepUpMessage.replaceAll(TRANSACTION_ID_PLACEHOLDER, UUID.randomUUID().toString()));
-    }
-
-    private void setCertificationLevel(String certificationLevel, Consumer<Integer> consumer) {
-        try {
-            int level = Integer.parseInt(certificationLevel);
-            if (level < 1 || level > 3) {
-                printErrorMessage(String.format("Provided certification level value '%s' is not 1, 2 or 3.", certificationLevel));
-            } else {
-                consumer.accept(level);
-            }
-        } catch (NumberFormatException e) {
-            printErrorMessage(String.format("Provided certification level value '%s' is not 1, 2 or 3.", certificationLevel));
+        if (Objects.nonNull(message)) {
+            throw new IllegalArgumentException(message);
         }
     }
 
-    private void validateContext(ArgumentsContext context) {
+    private void validateContext(ArgumentsContext.Builder context) {
         if (Objects.isNull(context.getConfigFile())) {
-            context.setConfigFile(DEFAULT_CONFIG_FILE);
+            context.withConfigFile(DEFAULT_CONFIG_FILE);
         }
         if (ObjectUtils.allNull(context.getOutputFile(), context.getSuffix())) {
-            context.setSuffix(DEFAULT_SUFFIX);
+            context.withSuffix(DEFAULT_SUFFIX);
         }
         if (context.getInputFiles().isEmpty()) {
-            printErrorMessage("Input file name is missing.", true);
+            throw new IllegalArgumentException("Input file name is missing.");
         }
         if (ObjectUtils.allNotNull(context.getOutputFile(), context.getSuffix())) {
-            printErrorMessage("Both output and suffix are configured. Only one of them can be used.", true);
+            throw new IllegalArgumentException("Both output and suffix are configured. Only one of them can be used.");
         }
         if (Objects.nonNull(context.getOutputFile()) && context.getInputFiles().size() > 1) {
-            printErrorMessage("Cannot use output with multiple input files. Please use suffix instead.", true);
+            throw new IllegalArgumentException("Cannot use output with multiple input files. Please use suffix instead.");
         }
-        if (Objects.isNull(context.getSignatureType())) {
-            printErrorMessage("Signature type is missing.", true);
-        }
-    }
-
-    private void printErrorMessage(String error) {
-        printErrorMessage(error, false);
-    }
-
-    private void printErrorMessage(String error, boolean shouldThrowException) {
-        if (StringUtils.isNotBlank(error)) {
-            if (isVerboseLevelActive) {
-                System.out.println(String.join(StringUtils.SPACE, "Error:", error, "Use -help argument to see the detailed options."));
-            }
-            if (shouldThrowException) {
-                throw new IllegalArgumentException(error);
-            }
+        if (Objects.isNull(context.getSignature())) {
+            throw new IllegalArgumentException("Signature type is missing.");
         }
     }
 }

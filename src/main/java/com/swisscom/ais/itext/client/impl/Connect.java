@@ -364,7 +364,8 @@ public class Connect {
                     pemParser = new PEMParser(br);
                     Object pemKeyPair = pemParser.readObject();
                     if (pemKeyPair instanceof PEMEncryptedKeyPair) {
-                        String password = System.getProperty("keystore.password");
+//                        String password = System.getProperty("client.auth.keyPassword");
+                        String password = System.getenv("AIS-PRIVATE-KEY-SECRET");
                         PEMDecryptorProvider decryptionProv = new JcePEMDecryptorProviderBuilder().build(password.toCharArray());
                         PEMKeyPair decryptedKeyPair = ((PEMEncryptedKeyPair) pemKeyPair).decryptKeyPair(decryptionProv);
                         privateKeyInfo = decryptedKeyPair.getPrivateKeyInfo();

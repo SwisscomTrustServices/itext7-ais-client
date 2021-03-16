@@ -15,7 +15,7 @@ Options:
 
     -suffix [SUFFIX]                                    - Suffix for output file(s), composed using the input file plus the suffix, as alternative to
                                                           specifying the output file entirely. Default is "signed-#time", where "#time" is replaced
-                                                          with current time (hhMMss).
+                                                          with current time (yyyyMMdd-hhMMss).
 
     -config [PROPERTIES FILE]                           - The properties file that provides the extra configuration parameters. Use -init to create a
                                                           sample file. If you don't specify a file, by default sign-pdf.properties is used.
@@ -23,63 +23,6 @@ Options:
     -help                                               - This help text
 
     -type [static|ondemand|ondemand-stepup|timestamp]   - The type of signature to create
-
-                                                          ### TIMESTAMP SIGNATURES ###
-                                                          Signature Type RFC 3161
-
-                                                          ### SIGNATURES WITH STATIC CERTIFICATES ###
-                                                          Signature Type RFC 3369
-
-                                                          ### SIGNATURES WITH ON DEMAND CERTIFICATES ###
-                                                          Signature Type RFC 3369
-                                                          Required parameter: dn
-
-    -dn                                                 - Subject Distinguished Name for the On Demand Certificate
-                                                          Supported attributes, separated by a comma:
-                                                                 [mandatory]
-                                                                  - cn or CommonName
-                                                                  - c or CountryName
-                                                                 [optional]
-                                                                  - EmailAddress
-                                                                  - GivenName
-                                                                  - SurName
-                                                                  - l or LocalityName
-                                                                  - ou or OrganizationalUnitName
-                                                                  - o or OrganizationName
-                                                                  - SerialNumber
-                                                                  - st or StateOrProvinceName
-                                                                  - sn or Surname
-
-    ### Optional Mobile ID Authorization (ondemand-stepup) ###
-
-    -stepUpMsisdn                                       - Phone number (requires -dn -stepUpMsg -stepUpLang)
-
-    -stepUpMsg                                          - Message to be displayed (requires -dn -stepUpMsisdn -stepUpLang)
-                                                          A placeholder #TRANSID# may be used anywhere in the message to include a unique
-                                                          transaction id
-
-    -stepUpLang                                         - Language of the message to be displayed (requires -dn -stepUpMsisdn -stepUpMsg)
-                                                          Supported values:
-                                                                  - en (english)
-                                                                  - de (deutsch)
-                                                                  - fr (français)
-                                                                  - it (italiano)
-
-    -stepUpSerialNumber                                 - Optional: Verify the step-up SerialNumber (16 chars; starting with 'MIDCHE' or 'SAS01')
-                                                          Document will only be signed if it matched the actual SerialNumber
-
-    ### ADOBE PDF SETTINGS ###
-    -reason                                             - Signing reason
-
-    -location                                           - Signing location
-
-    -contact                                            - Signing contact
-
-    -certLevel                                          - Certify the PDF, at most one certification per PDF is allowed
-                                                          Supported values:
-                                                                  - 1 (no further changes allowed)
-                                                                  - 2 (form filling and further signing allowed)
-                                                                  - 3 (form filling, annotations and further signing allowed)
 
     ### DEBUG OPTIONS ###
 
@@ -100,9 +43,8 @@ Examples:
     2. > ./bin/ais-client.sh -v -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
     [static]
     3. > ./bin/ais-client.sh -type static -input fileIn.pdf -output fileOut.pdf
-    4. > ./bin/ais-client.sh -vv -type static -input fileIn.pdf -output fileOut.pdf -config "/tmp/signpdf.properties" -reason Approved -location Berne -contact alice@acme.com
+    4. > ./bin/ais-client.sh -vv -type static -input fileIn.pdf -output fileOut.pdf -config "/tmp/signpdf.properties"
     [on demand]
-    5. > ./bin/ais-client.sh -type ondemand -input fileIn.pdf -output fileOut.pdf -dn "cn=Alice Smith,c=CH"
+    5. > ./bin/ais-client.sh -type ondemand -input fileIn.pdf -output fileOut.pdf
     [on demand with mobile id authorization]
-    6. > ./bin/ais-client.sh -vvv -type ondemand-stepup -input fileIn.pdf -output fileOut.pdf -dn "cn=Alice Smith,c=CH" -stepUpMsisdn 41792080350 -stepUpMsg "acme.com: Sign the PDF? (#TRANSID#)" -stepUpLang en
-    7. > ./bin/ais-client.sh -vvv -type ondemand-stepup -input fileIn.pdf -output fileOut.pdf -dn "cn=Alice Smith,c=CH" -stepUpMsisdn 41792080350 -stepUpMsg "acme.com: Sign the PDF? (#TRANSID#)" -stepUpLang en -stepUpSerialNumber MIDCHE2EG8NAWUB3
+    6. > ./bin/ais-client.sh -vvv -type ondemand-stepup -input fileIn.pdf -output fileOut.pdf

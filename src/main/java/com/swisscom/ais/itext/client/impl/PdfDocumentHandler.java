@@ -9,6 +9,7 @@ import com.swisscom.ais.itext.client.impl.container.PdfHashSignatureContainer;
 import com.swisscom.ais.itext.client.impl.container.PdfSignatureContainer;
 import com.swisscom.ais.itext.client.impl.signer.PdfDocumentSigner;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
@@ -28,6 +29,7 @@ public class PdfDocumentHandler implements Closeable {
     private final String signReason;
     private final String signLocation;
     private final String signContact;
+    private final String signatureName;
     private final int certificationLevel;
 
     private String outputFileTempPath;
@@ -38,13 +40,14 @@ public class PdfDocumentHandler implements Closeable {
     private PdfDocument pdfDocument;
 
     PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, String pdfPassword, String signReason, String signLocation,
-                       String signContact, int certificationLevel) {
+                       String signContact, String signatureName, int certificationLevel) {
         this.inputFilePath = inputFilePath;
         this.outputFilePath = outputFilePath;
         this.pdfPassword = pdfPassword;
         this.signReason = signReason;
         this.signLocation = signLocation;
         this.signContact = signContact;
+        this.signatureName = signatureName;
         this.certificationLevel = certificationLevel;
     }
 
@@ -77,6 +80,9 @@ public class PdfDocumentHandler implements Closeable {
             .setLocation(getOptionalAttribute(signLocation))
             .setContact(getOptionalAttribute(signContact));
         pdfSigner.setSignDate(signDate);
+        if (StringUtils.isNotBlank(signatureName)) {
+            pdfSigner.setFieldName(signatureName);
+        }
 
         if (certificationLevel > 0) {
             // check: at most one certification per pdf is allowed
@@ -96,7 +102,7 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     private String getOptionalAttribute(String attribute) {
-        return Objects.nonNull(attribute) ? attribute : "";
+        return Objects.nonNull(attribute) ? attribute : StringUtils.EMPTY;
     }
 
     private PdfReader createPdfReader() throws IOException {
