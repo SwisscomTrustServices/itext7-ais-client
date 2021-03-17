@@ -1,0 +1,55 @@
+{
+    "SignRequest": {
+        "@Profile": "http://ais.swisscom.ch/1.1",
+        "@RequestID": "f6vg9i",
+        "InputDocuments": {
+            "DocumentHash": [
+                {
+                    "@ID": "8lbepe",
+                    "dsig.DigestMethod": {
+                        "@Algorithm": "http://www.w3.org/2001/04/xmlenc#sha512"
+                    },
+                    "dsig.DigestValue": "digest-value"
+                },
+                {
+                    "@ID": "8lbepdfsdfe",
+                    "dsig.DigestMethod": {
+                        "@Algorithm": "http://www.w3.org/2001/04/xmlenc#sha512"
+                    },
+                    "dsig.DigestValue": "digest-value"
+                }
+            ]
+        },
+        "OptionalInputs": {
+            "AddTimestamp": {
+                "@Type": "urn:ietf:rfc:3161"
+            },
+            "AdditionalProfile": [
+                "http://ais.swisscom.ch/1.0/profiles/batchprocessing",
+                "urn:oasis:names:tc:dss:1.0:profiles:timestamping",
+                "http://ais.swisscom.ch/1.0/profiles/ondemandcertificate",
+                "urn:oasis:names:tc:dss:1.0:profiles:asynchronousprocessing",
+                "http://ais.swisscom.ch/1.1/profiles/redirect"
+            ],
+            "ClaimedIdentity": {
+                "Name": "{{claimedidentity}}:OnDemand-Advanced"
+            },
+            "SignatureType": "urn:ietf:rfc:3369",
+            "sc.AddRevocationInformation": {
+                "@Type": "PAdES"
+            },
+            "sc.SignatureStandard": "PAdES",
+            "sc.CertificateRequest": {
+                "sc.DistinguishedName": "cn=TEST User, givenname=Max, surname=Maximus, c=US, serialnumber=abcdefabcdefabcdefabcdefabcdef",
+                "sc.StepUpAuthorisation": {
+                    "sc.Phone": {
+                        "sc.Language": "en",
+                        "sc.MSISDN": "{{msisdn}}",
+                        "sc.Message": "Please confirm the signing of the tax document",
+                        "sc.SerialNumber": "UNIQUE_SERIAL_NUMBER"
+                    }
+                }
+            }
+        }
+    }
+}

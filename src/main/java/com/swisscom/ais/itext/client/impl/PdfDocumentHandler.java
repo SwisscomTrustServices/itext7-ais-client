@@ -5,9 +5,15 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.signatures.LtvVerification;
 import com.itextpdf.signatures.PdfSigner;
 import com.itextpdf.signatures.SignatureUtil;
+import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.impl.container.PdfHashSignatureContainer;
 import com.swisscom.ais.itext.client.impl.container.PdfSignatureContainer;
 import com.swisscom.ais.itext.client.impl.signer.PdfDocumentSigner;
+import com.swisscom.ais.itext.client.model.DigestAlgorithm;
+import com.swisscom.ais.itext.client.model.SignatureType;
+import com.swisscom.ais.itext.client.model.Trace;
+import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.utils.IdGenerator;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
@@ -15,6 +21,7 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.security.GeneralSecurityException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.util.*;
@@ -25,46 +32,36 @@ public class PdfDocumentHandler implements Closeable {
 
     private final String inputFilePath;
     private final String outputFilePath;
-    private final String pdfPassword;
-    private final String signReason;
-    private final String signLocation;
-    private final String signContact;
-    private final String signatureName;
-    private final int certificationLevel;
+    private final Trace trace;
 
-    private String outputFileTempPath;
+    private String id;
     private PdfReader pdfReader;
     private PdfWriter pdfWriter;
     private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
     private PdfDocument pdfDocument;
+    private String outputFileTempPath;
+    private byte[] documentHash;
+    private DigestAlgorithm digestAlgorithm;
 
-    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, String pdfPassword, String signReason, String signLocation,
-                       String signContact, String signatureName, int certificationLevel) {
+    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, Trace trace) {
         this.inputFilePath = inputFilePath;
         this.outputFilePath = outputFilePath;
-        this.pdfPassword = pdfPassword;
-        this.signReason = signReason;
-        this.signLocation = signLocation;
-        this.signContact = signContact;
-        this.signatureName = signatureName;
-        this.certificationLevel = certificationLevel;
-    }
-
-    public String getInputFilePath() {
-        return inputFilePath;
+        this.trace = trace;
     }
 
     /**
-     * Add signature information (reason for signing, location, contact, date) and create hash from pdf document
+     * Add signature information (reason for signing, location, contact, date) and create the pdf document hash
      *
-     * @param signDate        Date of signing
-     * @param estimatedSize   The estimated size for signatures
-     * @param hashAlgorithm   The hash algorithm which will be used to sign the pdf
-     * @param isTimestampOnly If it is a timestamp signature. This is necessary because the filter is an other one compared to a "standard" signature
-     * @return Hash of pdf as bytes
+     * @param algorithm     the hash algorithm which will be used to sign the pdf
+     * @param signatureType the signature type
+     * @param userData      the data used to fill the signature attributes
      */
-    public byte[] getPdfHash(@Nonnull Calendar signDate, int estimatedSize, @Nonnull String hashAlgorithm, boolean isTimestampOnly) throws Exception {
+    public void prepareForSigning(DigestAlgorithm algorithm, SignatureType signatureType, UserData userData)
+        throws IOException, GeneralSecurityException {
+
+        digestAlgorithm = algorithm;
+        id = IdGenerator.generateDocumentId();
         pdfDocument = new PdfDocument(createPdfReader());
         SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
         boolean hasSignature = signatureUtil.getSignatureNames().size() > 0;
@@ -75,30 +72,33 @@ public class PdfDocumentHandler implements Closeable {
         pdfReader = createPdfReader();
         pdfSigner = new PdfDocumentSigner(pdfReader, pdfWriter, hasSignature ? stampingProperties.useAppendMode() : stampingProperties);
 
+        Calendar signDate = Calendar.getInstance();
         pdfSigner.getSignatureAppearance()
-            .setReason(getOptionalAttribute(signReason))
-            .setLocation(getOptionalAttribute(signLocation))
-            .setContact(getOptionalAttribute(signContact));
-        pdfSigner.setSignDate(signDate);
-        if (StringUtils.isNotBlank(signatureName)) {
-            pdfSigner.setFieldName(signatureName);
+            .setReason(getOptionalAttribute(userData.getSignatureReason()))
+            .setLocation(getOptionalAttribute(userData.getSignatureLocation()))
+            .setContact(getOptionalAttribute(userData.getSignatureContactInfo()));
+
+        if (StringUtils.isNotBlank(userData.getSignatureName())) {
+            pdfSigner.setFieldName(userData.getSignatureName());
         }
 
-        if (certificationLevel > 0) {
-            // check: at most one certification per pdf is allowed
-            if (pdfSigner.getCertificationLevel() != PdfSigner.NOT_CERTIFIED) {
-                throw new Exception("Could not apply certification level option. At most one certification per pdf is allowed, but source pdf"
-                                    + " contained already a certification.");
-            }
-            pdfSigner.setCertificationLevel(certificationLevel);
-        }
-
+        boolean isTimestampSignature = signatureType.equals(SignatureType.TIMESTAMP);
         Map<PdfName, PdfObject> signatureDictionary = new HashMap<>();
         signatureDictionary.put(PdfName.Filter, PdfName.Adobe_PPKLite);
-        signatureDictionary.put(PdfName.SubFilter, isTimestampOnly ? PdfName.ETSI_RFC3161 : PdfName.ETSI_CAdES_DETACHED);
+        signatureDictionary.put(PdfName.SubFilter, isTimestampSignature ? PdfName.ETSI_RFC3161 : PdfName.ETSI_CAdES_DETACHED);
 
-        PdfHashSignatureContainer hashSignatureContainer = new PdfHashSignatureContainer(hashAlgorithm, new PdfDictionary(signatureDictionary));
-        return pdfSigner.computeHash(hashSignatureContainer, estimatedSize);
+        if (!isTimestampSignature) {
+            // Add 3 Minutes to move signing time within the OnDemand Certificate Validity
+            // This is only relevant in case the signature does not include a timestamp
+            // See section 5.8.5.1 of the Reference Guide
+            // todo It is ok also for the static workflow???
+            signDate.add(Calendar.MINUTE, 3);
+        }
+        pdfSigner.setSignDate(signDate);
+
+        PdfHashSignatureContainer hashSignatureContainer = new PdfHashSignatureContainer(algorithm.getDigestAlgorithm(),
+                                                                                         new PdfDictionary(signatureDictionary));
+        documentHash = pdfSigner.computeHash(hashSignatureContainer, signatureType.getEstimatedSignatureSizeInBytes());
     }
 
     private String getOptionalAttribute(String attribute) {
@@ -106,8 +106,9 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     private PdfReader createPdfReader() throws IOException {
-        ReaderProperties readerProperties = new ReaderProperties();
-        return new PdfReader(inputFilePath, Objects.nonNull(pdfPassword) ? readerProperties.setPassword(pdfPassword.getBytes()) : readerProperties);
+//        ReaderProperties readerProperties = new ReaderProperties();
+//        return new PdfReader(inputFilePath, Objects.nonNull(pdfPassword) ? readerProperties.setPassword(pdfPassword.getBytes()) : readerProperties);
+        return new PdfReader(inputFilePath, new ReaderProperties());
     }
 
     /**
@@ -116,21 +117,22 @@ public class PdfDocumentHandler implements Closeable {
      * @param externalSignature The extern generated signature
      * @param estimatedSize     Size of external signature
      */
-    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize) throws Exception {
+    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize) throws IOException, GeneralSecurityException {
         // Check if source pdf is not protected by a certification
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
-            throw new Exception(
-                "Could not apply signature because source file contains a certification that does not allow any changes to the document");
+            throw new AisClientException(String.format("Could not apply signature because source file contains a certification that does not allow "
+                                                       + "any changes to the document with id %s", trace.getId()));
         }
 
         if (Soap._debugMode) {
-            System.out.println("\nEstimated SignatureSize: " + estimatedSize);
-            System.out.println("Actual    SignatureSize: " + externalSignature.length);
-            System.out.println("Remaining Size         : " + (estimatedSize - externalSignature.length));
+            System.out.println("\nEstimated signature size: " + estimatedSize);
+            System.out.println("Actual signature size:      " + externalSignature.length);
+            System.out.println("Remaining size:             " + (estimatedSize - externalSignature.length));
         }
 
         if (estimatedSize < externalSignature.length) {
-            throw new IOException("\nNot enough space for signature (" + (estimatedSize - externalSignature.length) + " bytes)");
+            throw new IOException(String.format("Not enough space for signature in the document with id %s. The estimated size needs to be " +
+                                                " increased with %d bytes.", trace.getId(), externalSignature.length - estimatedSize));
         }
 
         pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
@@ -237,13 +239,36 @@ public class PdfDocumentHandler implements Closeable {
         }
     }
 
+    public String getInputFilePath() {
+        return inputFilePath;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public byte[] getDocumentHash() {
+        return documentHash;
+    }
+
+    public String getEncodedDocumentHash() {
+        return java.util.Base64.getEncoder().encodeToString(documentHash);
+    }
+
+    public DigestAlgorithm getDigestAlgorithm() {
+        return digestAlgorithm;
+    }
+
     @Override
     public void close() {
         try {
             pdfReader.close();
             pdfWriter.close();
+            pdfDocument.close();
+            inMemoryStream.close();
         } catch (IOException e) {
-            System.err.printf("Failed to close PDF reader or writer. Reason: %s", e.getMessage());
+            // log this on debug
+            System.out.printf("Failed to close the resources. Reason: %s", e.getMessage());
         }
     }
 }

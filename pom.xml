@@ -18,6 +18,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <itextpdf-kernel.version>7.1.14</itextpdf-kernel.version>
         <bouncycastle.version>1.68</bouncycastle.version>
+        <jackson-databind.version>2.12.2</jackson-databind.version>
         <jsr305.version>3.0.2</jsr305.version>
         <slf4j-api.version>1.7.30</slf4j-api.version>
         <logback-classic.version>1.2.3</logback-classic.version>
@@ -45,23 +46,16 @@
             <artifactId>sign</artifactId>
             <version>${itextpdf-kernel.version}</version>
         </dependency>
-        <!-- TODO delete -->
-<!--        <dependency>-->
-<!--            <groupId>com.itextpdf</groupId>-->
-<!--            <artifactId>itext7-core</artifactId>-->
-<!--            <version>7.1.14</version>-->
-<!--            <type>pom</type>-->
-<!--        </dependency>-->
-        <!--        <dependency>-->
-<!--            <groupId>org.bouncycastle</groupId>-->
-<!--            <artifactId>bcprov-jdk15on</artifactId>-->
-<!--            <version>${bouncycastle.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.bouncycastle</groupId>-->
-<!--            <artifactId>bcpkix-jdk15on</artifactId>-->
-<!--            <version>${bouncycastle.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-databind.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson-databind.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>

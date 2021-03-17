@@ -42,7 +42,7 @@ Examples:
     1. > ./bin/ais-client.sh -type timestamp -config config.properties -input fileIn.pdf -output fileOut.pdf
     2. > ./bin/ais-client.sh -v -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
     [static]
-    3. > ./bin/ais-client.sh -type static -input fileIn.pdf -output fileOut.pdf
+    3. > ./bin/ais-client.sh -type static -input fileIn.pdf
     4. > ./bin/ais-client.sh -vv -type static -input fileIn.pdf -output fileOut.pdf -config "/tmp/signpdf.properties"
     [on demand]
     5. > ./bin/ais-client.sh -type ondemand -input fileIn.pdf -output fileOut.pdf

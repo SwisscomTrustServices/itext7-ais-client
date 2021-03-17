@@ -1,0 +1,80 @@
+{
+    "SignResponse": {
+        "@RequestID": "YOUR_UNIQUE_ID",
+        "@Profile": "http://ais.swisscom.ch/1.1",
+        "Result": {
+            "ResultMajor": "http://ais.swisscom.ch/1.0/resultmajor/SubsystemError",
+            "ResultMinor": "http://ais.swisscom.ch/1.1/resultminor/subsystem/StepUp/service",
+            "ResultMessage": {
+                "@xml.lang": "en",
+                "$": "mss:_404"
+            }
+        },
+        "OptionalOutputs": {
+            "async.ResponseID": "RESPONSE_ID",
+            "sc.APTransID": "ID-abcdabcd-abcd-4ba5-9a9d-d9589b006e1b",
+            "sc.StepUpAuthorisationInfo": {
+                "sc.Result": {
+                    "sc.SerialNumber": "UNIQUE_SERIAL_NUMBER",
+                    "sc.ConsentURL": "CONSENT_URL",
+                    "sc.MobileIDFault": {
+                        "sc.Subcode": "mss:_404",
+                        "sc.Reason": "NO_KEY_FOUND",
+                        "sc.Detail": {
+                            "ns1.detail": "Mobile user account needs to be activated",
+                            "ns2.UserAssistance": {
+                                "ns2.PortalUrl": "https://.../MobileId?reactivateMobileId=true&msisdn=41999999999"
+                            }
+                        }
+                    }
+                }
+            },
+            "sc.RevocationInformation": {
+                "sc.CRLs": {
+                    "sc.CRL": [
+                        "MII...NrI=",
+                        "MII...NrQ="
+                    ]
+                },
+                "sc.OCSPs": {
+                    "sc.OCSP": [
+                        "MII..iQ=",
+                        "MII...NrI="
+                    ]
+                }
+            }
+        },
+        "SignatureObject": {
+            "Base64Signature": {
+                "$": "SIGNATURE_RESPONSE",
+                "@Type": "urn:ietf:rfc:3369"
+            },
+            "Timestamp": {
+                "RFC3161TimeStampToken": "MIIwg....=="
+            },
+            "Other": {
+                "sc.SignatureObjects": {
+                    "sc.ExtendedSignatureObject": [
+                        {
+                            "@WhichDocument": "YOUR_DOCID_#1",
+                            "Base64Signature": {
+                                "@Type": "urn:ietf:rfc:3369",
+                                "$": "SIGNATURE_RESPONSE_#1"
+                            }
+                        },
+                        {
+                            "@WhichDocument": "YOUR_DOCID_#2",
+                            "Base64Signature": {
+                                "@Type": "urn:ietf:rfc:3369",
+                                "$": "SIGNATURE_RESPONSE_#2"
+                            },
+                            "Timestamp": {
+                                "RFC3161TimeStampToken": "MIIwg....=="
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

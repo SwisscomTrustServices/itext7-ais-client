@@ -42,7 +42,7 @@ public class PdfMetadata {
         this.digestAlgorithm = digestAlgorithm;
     }
 
-    public void validateYourself(Trace trace) {
+    public void validate(Trace trace) {
         ValidationUtils.notEmpty(inputFilePath, "The inputFromFile cannot be null or empty", trace);
         ValidationUtils.notEmpty(outputFilePath, "The outputToFile cannot be null or empty", trace);
         ValidationUtils.notNull(digestAlgorithm, "The digest algorithm for a PDF handle cannot be NULL", trace);

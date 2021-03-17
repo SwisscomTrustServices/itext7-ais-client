@@ -3,6 +3,7 @@ package com.swisscom.ais.itext.client.model;
 import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.common.provider.ConfigurationProvider;
 import com.swisscom.ais.itext.client.common.provider.ConfigurationProviderPropertiesImpl;
+import com.swisscom.ais.itext.client.utils.IdGenerator;
 import com.swisscom.ais.itext.client.utils.PropertyUtils;
 import com.swisscom.ais.itext.client.utils.ValidationUtils;
 
@@ -52,7 +53,7 @@ public class UserData {
     }
 
     public void setTransactionIdToRandomUuid() {
-        this.transactionId = UUID.randomUUID().toString();
+        this.transactionId = IdGenerator.generateId();
     }
 
     public String getClaimedIdentityName() {
@@ -205,7 +206,7 @@ public class UserData {
         addTimestamp = PropertyUtils.extractProperty(provider, "signature.addTimestamp", Boolean::parseBoolean, Boolean.TRUE);
     }
 
-    public void validate(SignatureMode signatureMode, Trace trace) {
+    public void validatePropertiesForSignature(SignatureMode signatureMode, Trace trace) {
         if (StringUtils.isBlank(transactionId)) {
             throw new AisClientException("The user data's transactionId cannot be null or empty. For example, you can set it to a new UUID "
                                          + "or to any other value that is unique between requests. This helps with traceability in the logs "
