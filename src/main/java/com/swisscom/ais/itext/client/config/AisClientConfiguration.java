@@ -1,14 +1,10 @@
 package com.swisscom.ais.itext.client.config;
 
 import com.swisscom.ais.itext.client.common.AisClientException;
+import com.swisscom.ais.itext.client.common.PropertiesLoader;
 import com.swisscom.ais.itext.client.common.provider.ConfigurationProvider;
-import com.swisscom.ais.itext.client.common.provider.ConfigurationProviderPropertiesImpl;
-import com.swisscom.ais.itext.client.utils.PropertyUtils;
 
-import java.io.IOException;
-import java.util.Properties;
-
-public class AisClientConfiguration {
+public class AisClientConfiguration extends PropertiesLoader {
 
     private static final String INTERVAL_IN_SECONDS_POLL_PROPERTY = "client.poll.intervalInSeconds";
     private static final String ROUNDS_POLL_PROPERTY = "client.poll.rounds";
@@ -41,23 +37,9 @@ public class AisClientConfiguration {
         this.signaturePollingRounds = signaturePollingRounds;
     }
 
-    @SuppressWarnings("unused")
-    public void setFromPropertiesClasspathFile(String fileName) {
-        try {
-            Properties properties = new Properties();
-            properties.load(this.getClass().getResourceAsStream(fileName));
-            setFromProperties(properties);
-        } catch (IOException exception) {
-            throw new AisClientException(String.format("Failed to load AIS client properties from classpath file: [%s]", fileName), exception);
-        }
-    }
-
-    public void setFromProperties(Properties properties) {
-        setFromConfigurationProvider(new ConfigurationProviderPropertiesImpl(properties));
-    }
-
+    @Override
     public void setFromConfigurationProvider(ConfigurationProvider provider) {
-        setSignaturePollingIntervalInSeconds(PropertyUtils.extractIntProperty(provider, INTERVAL_IN_SECONDS_POLL_PROPERTY));
-        setSignaturePollingRounds(PropertyUtils.extractIntProperty(provider, ROUNDS_POLL_PROPERTY));
+        setSignaturePollingIntervalInSeconds(extractIntProperty(provider, INTERVAL_IN_SECONDS_POLL_PROPERTY));
+        setSignaturePollingRounds(extractIntProperty(provider, ROUNDS_POLL_PROPERTY));
     }
 }

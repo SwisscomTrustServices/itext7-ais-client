@@ -11,7 +11,7 @@ import java.util.Properties;
 
 public class ClientVersionProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(Loggers.CLIENT);
+    private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
 
     private static final String PROPERTIES_RESOURCE_NAME = "/build.properties";
 
@@ -21,7 +21,7 @@ public class ClientVersionProvider {
     public void init() {
         try (InputStream inputStream = this.getClass().getResourceAsStream(PROPERTIES_RESOURCE_NAME)) {
             if (Objects.isNull(inputStream)) {
-                log.debug("No build.properties file was found in the iText AIS client JAR. Skipping version info logging");
+                clientLogger.debug("No build.properties file was found in the iText AIS client JAR. Skipping version info logging");
                 return;
             }
             Properties properties = new Properties();
@@ -43,7 +43,7 @@ public class ClientVersionProvider {
             versionInfo = builder.toString();
             isVersionInfoAvailable = true;
         } catch (Exception ignored) {
-            log.debug("Failed to load the AIS client version info from embedded build.properties file. Skipping version info logging");
+            clientLogger.debug("Failed to load the AIS client version info from embedded build.properties file. Skipping version info logging");
         }
     }
 

@@ -1,18 +1,14 @@
 package com.swisscom.ais.itext.client.model;
 
 import com.swisscom.ais.itext.client.common.AisClientException;
+import com.swisscom.ais.itext.client.common.PropertiesLoader;
 import com.swisscom.ais.itext.client.common.provider.ConfigurationProvider;
-import com.swisscom.ais.itext.client.common.provider.ConfigurationProviderPropertiesImpl;
 import com.swisscom.ais.itext.client.utils.IdGenerator;
-import com.swisscom.ais.itext.client.utils.PropertyUtils;
 import com.swisscom.ais.itext.client.utils.ValidationUtils;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Properties;
-import java.util.UUID;
-
-public class UserData {
+public class UserData extends PropertiesLoader {
 
     private String transactionId;
 
@@ -176,34 +172,23 @@ public class UserData {
         this.signatureContactInfo = signatureContactInfo;
     }
 
-    public void setFromPropertiesClasspathFile(String fileName) {
-        setFromProperties(PropertyUtils.loadPropertiesFromClasspathFile(this.getClass(), fileName));
-    }
-
-    public void setFromPropertiesFile(String fileName) {
-        setFromProperties(PropertyUtils.loadPropertiesFromFile(fileName));
-    }
-
-    public void setFromProperties(Properties properties) {
-        setFromConfigurationProvider(new ConfigurationProviderPropertiesImpl(properties));
-    }
-
+    @Override
     public void setFromConfigurationProvider(ConfigurationProvider provider) {
-        claimedIdentityName = PropertyUtils.extractStringProperty(provider, "signature.claimedIdentityName");
-        claimedIdentityKey = provider.getProperty("signature.claimedIdentityKey");
-        stepUpLanguage = provider.getProperty("signature.stepUp.language");
-        stepUpMsisdn = provider.getProperty("signature.stepUp.msisdn");
-        stepUpMessage = provider.getProperty("signature.stepUp.message");
-        stepUpSerialNumber = provider.getProperty("signature.stepUp.serialNumber");
-        distinguishedName = PropertyUtils.extractStringProperty(provider, "signature.distinguishedName");
-        signatureName = provider.getProperty("signature.name");
-        signatureReason = provider.getProperty("signature.reason");
-        signatureLocation = provider.getProperty("signature.location");
-        signatureContactInfo = provider.getProperty("signature.contactInfo");
-        signatureStandard = PropertyUtils.extractProperty(provider, "signature.standard", SignatureStandard::getByValue, SignatureStandard.DEFAULT);
-        addRevocationInformation = PropertyUtils.extractProperty(provider, "signature.revocationInformation", RevocationInformation::getByValue,
-                                                                 RevocationInformation.DEFAULT);
-        addTimestamp = PropertyUtils.extractProperty(provider, "signature.addTimestamp", Boolean::parseBoolean, Boolean.TRUE);
+        setClaimedIdentityName(extractStringProperty(provider, "signature.claimedIdentityName"));
+        setClaimedIdentityKey(provider.getProperty("signature.claimedIdentityKey"));
+        setStepUpLanguage(provider.getProperty("signature.stepUp.language"));
+        setStepUpMsisdn(provider.getProperty("signature.stepUp.msisdn"));
+        setStepUpMessage(provider.getProperty("signature.stepUp.message"));
+        setStepUpSerialNumber(provider.getProperty("signature.stepUp.serialNumber"));
+        setDistinguishedName(extractStringProperty(provider, "signature.distinguishedName"));
+        setSignatureName(provider.getProperty("signature.name"));
+        setSignatureReason(provider.getProperty("signature.reason"));
+        setSignatureLocation(provider.getProperty("signature.location"));
+        setSignatureContactInfo(provider.getProperty("signature.contactInfo"));
+        setSignatureStandard(extractProperty(provider, "signature.standard", SignatureStandard::getByValue, SignatureStandard.DEFAULT));
+        setAddRevocationInformation(extractProperty(provider, "signature.revocationInformation", RevocationInformation::getByValue,
+                                                    RevocationInformation.DEFAULT));
+        setAddTimestamp(extractProperty(provider, "signature.addTimestamp", Boolean::parseBoolean, Boolean.TRUE));
     }
 
     public void validatePropertiesForSignature(SignatureMode signatureMode, Trace trace) {

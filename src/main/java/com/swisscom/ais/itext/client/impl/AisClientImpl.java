@@ -11,6 +11,8 @@ import com.swisscom.ais.itext.client.model.SignatureResult;
 import com.swisscom.ais.itext.client.model.SignatureType;
 import com.swisscom.ais.itext.client.model.Trace;
 import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.rest.SignatureRestClient;
+import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.model.AdditionalProfile;
 import com.swisscom.ais.itext.client.rest.model.ResultMajorCode;
 import com.swisscom.ais.itext.client.rest.model.ResultMessageCode;
@@ -35,20 +37,23 @@ import java.util.stream.Collectors;
 
 public class AisClientImpl implements AisClient {
 
-    private static final Logger logClient = LoggerFactory.getLogger(Loggers.CLIENT);
-    private static final Logger logProtocol = LoggerFactory.getLogger(Loggers.CLIENT_PROTOCOL);
+    private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
+    private static final Logger protocolLogger = LoggerFactory.getLogger(Loggers.CLIENT_PROTOCOL);
 
     private final AisRequestService requestService;
     private final AisClientConfiguration configuration;
+    private final SignatureRestClient restClient;
 
     public AisClientImpl() {
         this.requestService = new AisRequestService();
         this.configuration = new AisClientConfiguration();
+        this.restClient = new SignatureRestClientImpl();
     }
 
-    public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration) {
+    public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration, SignatureRestClient restClient) {
         this.requestService = requestService;
         this.configuration = configuration;
+        this.restClient = restClient;
     }
 
     @Override
@@ -88,13 +93,17 @@ public class AisClientImpl implements AisClient {
             List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, !documents.isEmpty());
             AISSignRequest signRequest = requestService.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
                                                                             signWithStepUp, signWithCertificateRequest);
-            // todo
-            AISSignResponse signResponse = null;
+            AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
 
             if (isNotSuccessfulResponse(signResponse)) {
                 return extractSignatureResultFromResponse(signResponse, trace);
             }
             // todo
+            // poll for signature status in case of signWithOnDemandCertificateAndStepUp
+//            signResponse = pollUntilSignatureIsComplete(signResponse, userData, trace);
+//            if (!checkThatResponseIsSuccessful(signResponse)) {
+//                return selectASignatureResultForResponse(signResponse, trace);
+//            }
 //            finishDocumentsSigning(documents, signResponse, signatureMode, trace);
             return SignatureResult.SUCCESS;
         } catch (Exception e) {
@@ -102,6 +111,14 @@ public class AisClientImpl implements AisClient {
         } finally {
             documents.forEach(PdfDocumentHandler::close);
         }
+    }
+
+    public AisClientConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public SignatureRestClient getRestClient() {
+        return restClient;
     }
 
     private List<PdfDocumentHandler> prepareMultipleDocumentsForSigning(List<PdfMetadata> documentsMetadata, SignatureMode signatureMode,
@@ -114,7 +131,8 @@ public class AisClientImpl implements AisClient {
     private PdfDocumentHandler prepareOneDocumentForSigning(PdfMetadata documentMetadata, SignatureMode signatureMode, SignatureType signatureType,
                                                             UserData userData, Trace trace) {
         try {
-            logClient.info("Preparing {} document signing : {} - {}", signatureMode.getValue(), documentMetadata.getInputFilePath(), trace.getId());
+            clientLogger
+                .info("Preparing {} document signing : {} - {}", signatureMode.getValue(), documentMetadata.getInputFilePath(), trace.getId());
             PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputFilePath(), documentMetadata.getOutputFilePath(), trace);
             newDocument.prepareForSigning(documentMetadata.getDigestAlgorithm(), signatureType, userData);
             return newDocument;
@@ -170,7 +188,7 @@ public class AisClientImpl implements AisClient {
                                                    ResponseHelper.getResponseResultSummary(response), trace.getId()));
     }
 
-    public Optional<SignatureResult> extractSignatureResultFromMinorCode(ResultMinorCode minorCode, Result responseResult) {
+    private Optional<SignatureResult> extractSignatureResultFromMinorCode(ResultMinorCode minorCode, Result responseResult) {
         if (Objects.isNull(minorCode)) {
             return Optional.empty();
         }
@@ -199,6 +217,8 @@ public class AisClientImpl implements AisClient {
 
     @Override
     public void close() throws IOException {
-        // todo
+        if (Objects.nonNull(restClient)) {
+            restClient.close();
+        }
     }
 }

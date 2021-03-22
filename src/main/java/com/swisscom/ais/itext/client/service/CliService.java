@@ -8,6 +8,9 @@ import com.swisscom.ais.itext.client.model.ArgumentsContext;
 import com.swisscom.ais.itext.client.model.PdfMetadata;
 import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
+import com.swisscom.ais.itext.client.rest.SignatureRestClient;
+import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
+import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.utils.PropertyUtils;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +35,7 @@ public class CliService {
     private ArgumentsService argumentsService;
     private AisClientConfiguration aisConfig;
     private Properties properties;
+    private SignatureRestClient restClient;
     private UserData userData;
 
     public Optional<ArgumentsContext> buildArgumentsContext(String[] args) {
@@ -52,7 +56,10 @@ public class CliService {
 
         properties = PropertyUtils.loadPropertiesFromFile(context.getConfigFile());
 
-        // todo rest client config
+        RestClientConfiguration restConfig = new RestClientConfiguration();
+        restConfig.setFromProperties(properties);
+
+        restClient = new SignatureRestClientImpl().setConfiguration(restConfig);
 
         aisConfig = new AisClientConfiguration();
         aisConfig.setFromProperties(properties);
