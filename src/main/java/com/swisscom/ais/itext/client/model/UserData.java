@@ -8,7 +8,7 @@ import com.swisscom.ais.itext.client.utils.ValidationUtils;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class UserData extends PropertiesLoader {
+public class UserData extends PropertiesLoader<UserData> {
 
     private String transactionId;
 
@@ -100,6 +100,11 @@ public class UserData extends PropertiesLoader {
         this.consentUrlCallback = consentUrlCallback;
     }
 
+    public UserData withConsentUrlCallback(ConsentUrlCallback consentUrlCallback) {
+        setConsentUrlCallback(consentUrlCallback);
+        return this;
+    }
+
     public boolean isAddTimestamp() {
         return addTimestamp;
     }
@@ -170,6 +175,11 @@ public class UserData extends PropertiesLoader {
 
     public void setSignatureContactInfo(String signatureContactInfo) {
         this.signatureContactInfo = signatureContactInfo;
+    }
+
+    @Override
+    public UserData getCurrentContext() {
+        return this;
     }
 
     @Override

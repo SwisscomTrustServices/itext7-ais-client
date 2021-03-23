@@ -43,8 +43,8 @@ public class PdfMetadata {
     }
 
     public void validate(Trace trace) {
-        ValidationUtils.notEmpty(inputFilePath, "The inputFromFile cannot be null or empty", trace);
-        ValidationUtils.notEmpty(outputFilePath, "The outputToFile cannot be null or empty", trace);
+        ValidationUtils.notBlank(inputFilePath, "The inputFromFile cannot be null or empty", trace);
+        ValidationUtils.notBlank(outputFilePath, "The outputToFile cannot be null or empty", trace);
         ValidationUtils.notNull(digestAlgorithm, "The digest algorithm for a PDF handle cannot be NULL", trace);
     }
 }

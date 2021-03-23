@@ -7,6 +7,8 @@ import com.swisscom.ais.itext.client.model.SignatureStandard;
 import com.swisscom.ais.itext.client.model.SignatureType;
 import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.rest.model.AdditionalProfile;
+import com.swisscom.ais.itext.client.rest.model.pendingreq.AISPendingRequest;
+import com.swisscom.ais.itext.client.rest.model.pendingreq.AsyncPendingRequest;
 import com.swisscom.ais.itext.client.rest.model.signreq.*;
 import com.swisscom.ais.itext.client.utils.IdGenerator;
 
@@ -42,6 +44,20 @@ public class AisRequestService {
             .withOptionalInputs(optionalInputs);
 
         return new AISSignRequest().withSignRequest(request);
+    }
+
+    public AISPendingRequest buildAisPendingRequest(String responseId, UserData userData) {
+        com.swisscom.ais.itext.client.rest.model.pendingreq.ClaimedIdentity claimedIdentity =
+            new com.swisscom.ais.itext.client.rest.model.pendingreq.ClaimedIdentity();
+        claimedIdentity.withName(userData.getClaimedIdentityName());
+
+        com.swisscom.ais.itext.client.rest.model.pendingreq.OptionalInputs optionalInputs =
+            new com.swisscom.ais.itext.client.rest.model.pendingreq.OptionalInputs();
+        optionalInputs.withAsyncResponseID(responseId).withClaimedIdentity(claimedIdentity);
+
+        AsyncPendingRequest request = new AsyncPendingRequest().withProfile(SWISSCOM_BASIC_PROFILE).withOptionalInputs(optionalInputs);
+
+        return new AISPendingRequest().withAsyncPendingRequest(request);
     }
 
     private OptionalInputs buildRequestOptionalInputs(SignatureMode signatureMode, SignatureType signatureType, UserData userData,

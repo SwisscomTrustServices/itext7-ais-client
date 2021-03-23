@@ -4,7 +4,7 @@ import com.swisscom.ais.itext.client.common.PropertiesLoader;
 import com.swisscom.ais.itext.client.common.provider.ConfigurationProvider;
 import com.swisscom.ais.itext.client.utils.ValidationUtils;
 
-public class RestClientConfiguration extends PropertiesLoader {
+public class RestClientConfiguration extends PropertiesLoader<RestClientConfiguration> {
 
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 20;
     private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 10;
@@ -29,7 +29,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setServiceSignUrl(String serviceSignUrl) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The serviceSignUrl parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The serviceSignUrl parameter of the REST client configuration must not be empty", null);
         this.serviceSignUrl = serviceSignUrl;
     }
 
@@ -38,7 +38,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setServicePendingUrl(String servicePendingUrl) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The servicePendingUrl parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The servicePendingUrl parameter of the REST client configuration must not be empty", null);
         this.servicePendingUrl = servicePendingUrl;
     }
 
@@ -47,7 +47,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setClientKeyFile(String clientKeyFile) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The clientKeyFile parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The clientKeyFile parameter of the REST client configuration must not be empty", null);
         this.clientKeyFile = clientKeyFile;
     }
 
@@ -64,7 +64,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setClientCertificateFile(String clientCertificateFile) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The clientCertificateFile parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The clientCertificateFile parameter of the REST client configuration must not be empty", null);
         this.clientCertificateFile = clientCertificateFile;
     }
 
@@ -73,7 +73,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setServerCertificateFile(String serverCertificateFile) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The serverCertificateFile parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The serverCertificateFile parameter of the REST client configuration must not be empty", null);
         this.serverCertificateFile = serverCertificateFile;
     }
 
@@ -82,7 +82,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setMaxTotalConnections(int maxTotalConnections) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The maxTotalConnections parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The maxTotalConnections parameter of the REST client configuration must not be empty", null);
         this.maxTotalConnections = maxTotalConnections;
     }
 
@@ -91,7 +91,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setMaxConnectionsPerRoute(int maxConnectionsPerRoute) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The maxConnectionsPerRoute parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The maxConnectionsPerRoute parameter of the REST client configuration must not be empty", null);
         this.maxConnectionsPerRoute = maxConnectionsPerRoute;
     }
 
@@ -100,7 +100,7 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setConnectionTimeoutInSec(int connectionTimeoutInSec) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The connectionTimeoutInSec parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The connectionTimeoutInSec parameter of the REST client configuration must not be empty", null);
         this.connectionTimeoutInSec = connectionTimeoutInSec;
     }
 
@@ -109,8 +109,13 @@ public class RestClientConfiguration extends PropertiesLoader {
     }
 
     public void setResponseTimeoutInSec(int responseTimeoutInSec) {
-        ValidationUtils.notEmpty(serviceSignUrl, "The responseTimeoutInSec parameter of the REST client configuration must not be empty", null);
+        ValidationUtils.notBlank(serviceSignUrl, "The responseTimeoutInSec parameter of the REST client configuration must not be empty", null);
         this.responseTimeoutInSec = responseTimeoutInSec;
+    }
+
+    @Override
+    public RestClientConfiguration getCurrentContext() {
+        return this;
     }
 
     @Override
@@ -118,7 +123,7 @@ public class RestClientConfiguration extends PropertiesLoader {
         setServiceSignUrl(extractStringProperty(provider, "server.rest.signUrl"));
         setServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl"));
         setClientKeyFile(extractStringProperty(provider, "client.auth.keyFile"));
-        setClientKeyPassword(provider.getProperty("client.auth.keyPassword"));
+        setClientKeyPassword(extractPasswordProperty(provider, "client.auth.keyPassword"));
         setClientCertificateFile(extractStringProperty(provider, "client.cert.file"));
         setServerCertificateFile(extractStringProperty(provider, "server.cert.file"));
         setMaxTotalConnections(extractIntProperty(provider, "client.http.maxTotalConnections"));

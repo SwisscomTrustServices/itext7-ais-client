@@ -1,6 +1,7 @@
 package com.swisscom.ais.itext.client;
 
 import com.swisscom.ais.itext.client.model.ArgumentsContext;
+import com.swisscom.ais.itext.client.service.AisRequestService;
 import com.swisscom.ais.itext.client.service.CliService;
 
 import java.util.Optional;
@@ -8,7 +9,7 @@ import java.util.Optional;
 public class SignPdfCli {
 
     public static void main(String[] args) {
-        CliService cliService = new CliService();
+        CliService cliService = new CliService(new AisRequestService());
         try {
             Optional<ArgumentsContext> argumentsContext = cliService.buildArgumentsContext(args);
             if (argumentsContext.isPresent()) {

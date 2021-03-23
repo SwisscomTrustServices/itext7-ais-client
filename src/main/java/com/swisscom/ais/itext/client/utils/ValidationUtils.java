@@ -14,8 +14,8 @@ public class ValidationUtils {
 
     private static final String DELIMITER = " - ";
 
-    public static void notEmpty(String value, String errorMessage, Trace trace) {
-        validateValue(value, StringUtils::isBlank, errorMessage, trace);
+    public static void notBlank(String value, String errorMessage, Trace trace) {
+        validateValue(value, StringUtils::isNotBlank, errorMessage, trace);
     }
 
     public static void notNull(Object value, String errorMessage, Trace trace) {
@@ -26,12 +26,12 @@ public class ValidationUtils {
         validateValue(values, ObjectUtils::allNotNull, errorMessage, trace);
     }
 
-    public static void between(int value, int minValue, int maxValue, String errorMessage, Trace trace) {
-        validateValue(value, v -> ComparableUtils.is(v).between(minValue, maxValue), errorMessage, trace);
+    public static void between(int value, int minValue, int maxValue, String errorMessage) {
+        validateValue(value, v -> ComparableUtils.is(v).between(minValue, maxValue), errorMessage, null);
     }
 
-    private static <T> void validateValue(T value, Predicate<T> invalidValuePredicate, String errorMessage, Trace trace) {
-        if (invalidValuePredicate.test(value)) {
+    private static <T> void validateValue(T value, Predicate<T> validValuePredicate, String errorMessage, Trace trace) {
+        if (!validValuePredicate.test(value)) {
             String message = Objects.nonNull(trace) ? String.join(DELIMITER, errorMessage, trace.getId()) : errorMessage;
             throw new AisClientException(message);
         }

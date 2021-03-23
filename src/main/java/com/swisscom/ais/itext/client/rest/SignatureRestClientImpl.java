@@ -71,7 +71,7 @@ public class SignatureRestClientImpl implements SignatureRestClient {
     private ObjectMapper jacksonMapper;
     private CloseableHttpClient httpClient;
 
-    public SignatureRestClientImpl setConfiguration(RestClientConfiguration config) {
+    public SignatureRestClientImpl withConfiguration(RestClientConfiguration config) {
         this.config = config;
         Security.addProvider(new BouncyCastleProvider());
         jacksonMapper = new ObjectMapper();

@@ -76,6 +76,7 @@ import com.swisscom.ais.itext.client.model.DigestAlgorithm;
 import com.swisscom.ais.itext.client.model.PdfMetadata;
 import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.model.VerboseLevel;
 
 public class Soap {
 
@@ -204,11 +205,7 @@ public class Soap {
             claimedIdentity = claimedIdentity.concat(":" + userData.getClaimedIdentityKey());
         }
 
-        PdfDocumentHandler
-            pdf =
-            new PdfDocumentHandler(metadata.getInputFilePath(), metadata.getOutputFilePath(), null, userData.getSignatureReason(),
-                                   userData.getSignatureLocation(), userData.getSignatureContactInfo(),
-                                   userData.getSignatureName());
+        PdfDocumentHandler pdf = new PdfDocumentHandler(metadata.getInputFilePath(), metadata.getOutputFilePath(), null, VerboseLevel.LOW);
 
         try {
             String requestId = getRequestId();
@@ -355,7 +352,7 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
+//            pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
             pdfHash[i] = pdfs[i].getDocumentHash();
         }
 
@@ -398,7 +395,7 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
+//            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
         }
 
         SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), true,
@@ -435,7 +432,7 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
+//            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), false);
         }
 
         SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), false,
@@ -476,7 +473,7 @@ public class Soap {
 
         byte[][] pdfHash = new byte[pdfs.length][];
         for (int i = 0; i < pdfs.length; i++) {
-            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), true);
+//            pdfHash[i] = pdfs[i].prepareForSigning(signDate, estimatedSize, hashAlgo.getDigestAlgorithm(), true);
         }
 
         SOAPMessage sigReqMsg = createRequestMessage(Include.RequestType.SignRequest, hashAlgo.getDigestUri(), false,

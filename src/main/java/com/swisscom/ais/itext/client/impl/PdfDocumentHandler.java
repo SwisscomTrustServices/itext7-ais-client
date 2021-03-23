@@ -13,8 +13,10 @@ import com.swisscom.ais.itext.client.model.DigestAlgorithm;
 import com.swisscom.ais.itext.client.model.SignatureType;
 import com.swisscom.ais.itext.client.model.Trace;
 import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.utils.IdGenerator;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -33,6 +35,7 @@ public class PdfDocumentHandler implements Closeable {
     private final String inputFilePath;
     private final String outputFilePath;
     private final Trace trace;
+    private final VerboseLevel loggingLevel;
 
     private String id;
     private PdfReader pdfReader;
@@ -44,10 +47,12 @@ public class PdfDocumentHandler implements Closeable {
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
-    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, Trace trace) {
+    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, Trace trace,
+                       VerboseLevel loggingLevel) {
         this.inputFilePath = inputFilePath;
         this.outputFilePath = outputFilePath;
         this.trace = trace;
+        this.loggingLevel = loggingLevel;
     }
 
     /**
@@ -117,11 +122,12 @@ public class PdfDocumentHandler implements Closeable {
      * @param externalSignature The extern generated signature
      * @param estimatedSize     Size of external signature
      */
-    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize) throws IOException, GeneralSecurityException {
-        // Check if source pdf is not protected by a certification
+    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize) {
+
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
-            throw new AisClientException(String.format("Could not apply signature because source file contains a certification that does not allow "
-                                                       + "any changes to the document with id %s", trace.getId()));
+            throw new AisClientException(
+                String.format("Could not apply signature because source file contains a certification that does not allow "
+                              + "any changes to the document with id %s", trace.getId()));
         }
 
         if (Soap._debugMode) {
@@ -131,116 +137,132 @@ public class PdfDocumentHandler implements Closeable {
         }
 
         if (estimatedSize < externalSignature.length) {
-            throw new IOException(String.format("Not enough space for signature in the document with id %s. The estimated size needs to be " +
-                                                " increased with %d bytes.", trace.getId(), externalSignature.length - estimatedSize));
+            throw new AisClientException(String.format("Not enough space for signature in the document with id %s. The estimated size needs to be " +
+                                                       " increased with %d bytes.", trace.getId(), externalSignature.length - estimatedSize));
         }
 
-        pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
+        OutputStream outputStream = null;
+        try {
+            pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
-        outputFileTempPath = Files.createTempFile("signed", "-temp.pdf").toString();
-        OutputStream outputStream = new FileOutputStream(outputFileTempPath);
-        inMemoryStream.writeTo(outputStream);
+            outputFileTempPath = Files.createTempFile("signed", "-temp.pdf").toString();
+            outputStream = new FileOutputStream(outputFileTempPath);
+            inMemoryStream.writeTo(outputStream);
 
-        if (Soap._debugMode) {
-            System.out.println("\nOK writing signature to " + outputFileTempPath);
+            if (Soap._debugMode) {
+                System.out.println("\nOK writing signature to " + outputFileTempPath);
+            }
+
+            pdfDocument.close();
+            inMemoryStream.close();
+            outputStream.close();
+        } catch (Exception e) {
+            throw new AisClientException(String.format("Failed to embed the signature in the document - %s", trace.getId()));
+        } finally {
+            closeResource(outputStream);
         }
-
-        pdfDocument.close();
-        inMemoryStream.close();
-        outputStream.close();
     }
 
     /**
      * Add external revocation information to DSS Dictionary, to enable Long Term Validation (LTV) in Adobe Reader
      *
-     * @param ocspArr List of OCSP Responses as base64 encoded String
-     * @param crlArr  List of CRLs as base64 encoded String
+     * @param encodedOcspEntries List of OCSP response in base64 encoding
+     * @param encodedCrlEntries  List of CRL response in base64 encoding
      */
-    public void addValidationInformation(ArrayList<String> ocspArr, ArrayList<String> crlArr) throws Exception {
-        if (ocspArr == null && crlArr == null) {
+    // todo maybe try to embed the revocation info in the previous step
+    public void addValidationInformation(List<String> encodedOcspEntries, List<String> encodedCrlEntries) {
+        if (ObjectUtils.allNull(encodedOcspEntries, encodedCrlEntries)) {
             return;
         }
 
-        // Check if source pdf is not protected by a certification
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
-            throw new Exception(
-                "Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a certification that does not allow any changes.");
+            throw new AisClientException("Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a certification "
+                                         + " that does not allow any changes.");
         }
 
-        Collection<byte[]> ocsp = new ArrayList<>();
-        Collection<byte[]> crl = new ArrayList<>();
+        try {
+            Collection<byte[]> ocsp = new ArrayList<>();
+            Collection<byte[]> crl = new ArrayList<>();
 
-        // Decode each OCSP Response (String of base64 encoded form) and add it to the Collection (byte[])
-        if (ocspArr != null) {
-            for (String ocspBase64 : ocspArr) {
-                OCSPResp ocspResp = new OCSPResp(new ByteArrayInputStream(Base64.decode(ocspBase64)));
-                BasicOCSPResp basicResp = (BasicOCSPResp) ocspResp.getResponseObject();
+            if (Objects.nonNull(encodedOcspEntries)) {
+                for (String encodedOcsp : encodedOcspEntries) {
+                    OCSPResp ocspResp = new OCSPResp(new ByteArrayInputStream(Base64.decode(encodedOcsp)));
+                    BasicOCSPResp basicResp = (BasicOCSPResp) ocspResp.getResponseObject();
 
-                if (Soap._debugMode) {
-                    System.out.println("\nEmbedding OCSP Response...");
-                    System.out.println("Status                : " + ((ocspResp.getStatus() == 0) ? "GOOD" : "BAD"));
-                    System.out.println("Produced at           : " + basicResp.getProducedAt());
-                    System.out.println("This Update           : " + basicResp.getResponses()[0].getThisUpdate());
-                    System.out.println("Next Update           : " + basicResp.getResponses()[0].getNextUpdate());
-                    System.out.println("X509 Cert Issuer      : " + basicResp.getCerts()[0].getIssuer());
-                    System.out.println("X509 Cert Subject     : " + basicResp.getCerts()[0].getSubject());
-                    System.out.println("Certificate ID        : " + basicResp.getResponses()[0].getCertID().getSerialNumber().toString() + " ("
-                                       + basicResp.getResponses()[0].getCertID().getSerialNumber().toString(16).toUpperCase() + ")");
+                    if (Soap._debugMode) {
+                        System.out.println("\nEmbedding OCSP Response...");
+                        System.out.println("Status                : " + ((ocspResp.getStatus() == 0) ? "GOOD" : "BAD"));
+                        System.out.println("Produced at           : " + basicResp.getProducedAt());
+                        System.out.println("This Update           : " + basicResp.getResponses()[0].getThisUpdate());
+                        System.out.println("Next Update           : " + basicResp.getResponses()[0].getNextUpdate());
+                        System.out.println("X509 Cert Issuer      : " + basicResp.getCerts()[0].getIssuer());
+                        System.out.println("X509 Cert Subject     : " + basicResp.getCerts()[0].getSubject());
+                        System.out.println("Certificate ID        : " + basicResp.getResponses()[0].getCertID().getSerialNumber().toString() + " ("
+                                           + basicResp.getResponses()[0].getCertID().getSerialNumber().toString(16).toUpperCase() + ")");
+                    }
+
+                    ocsp.add(basicResp.getEncoded());
                 }
-
-                ocsp.add(basicResp.getEncoded()); // Add Basic OCSP Response to Collection (ASN.1 encoded representation of this object)
             }
-        }
 
-        // Decode each CRL (String of base64 encoded form) and add it to the Collection (byte[])
-        if (crlArr != null) {
-            for (String crlBase64 : crlArr) {
-                X509CRL x509crl = (X509CRL) CertificateFactory.getInstance("X.509").generateCRL(new ByteArrayInputStream(Base64.decode(crlBase64)));
+            if (Objects.nonNull(encodedCrlEntries)) {
+                for (String encodedCrl : encodedCrlEntries) {
+                    X509CRL
+                        x509crl =
+                        (X509CRL) CertificateFactory.getInstance("X.509").generateCRL(new ByteArrayInputStream(Base64.decode(encodedCrl)));
 
-                if (Soap._debugMode) {
-                    System.out.println("\nEmbedding CRL...");
-                    System.out.println("IssuerDN                    : " + x509crl.getIssuerDN());
-                    System.out.println("This Update                 : " + x509crl.getThisUpdate());
-                    System.out.println("Next Update                 : " + x509crl.getNextUpdate());
-                    System.out.println("No. of Revoked Certificates : "
-                                       + ((x509crl.getRevokedCertificates() == null) ? "0" : x509crl.getRevokedCertificates().size()));
+                    if (Soap._debugMode) {
+                        System.out.println("\nEmbedding CRL...");
+                        System.out.println("IssuerDN                    : " + x509crl.getIssuerDN());
+                        System.out.println("This Update                 : " + x509crl.getThisUpdate());
+                        System.out.println("Next Update                 : " + x509crl.getNextUpdate());
+                        System.out.println("No. of Revoked Certificates : "
+                                           + ((x509crl.getRevokedCertificates() == null) ? "0" : x509crl.getRevokedCertificates().size()));
+                    }
+
+                    crl.add(x509crl.getEncoded());
                 }
-
-                crl.add(x509crl.getEncoded()); // Add CRL to Collection (ASN.1 DER-encoded form of this CRL)
             }
-        }
 
-        PdfReader reader = new PdfReader(outputFileTempPath);
-        PdfWriter writer = new PdfWriter(outputFilePath);
-        PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode());
-        LtvVerification validation = new LtvVerification(pdfDocument);
+            PdfReader reader = new PdfReader(outputFileTempPath);
+            PdfWriter writer = new PdfWriter(outputFilePath);
+            PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode());
+            LtvVerification validation = new LtvVerification(pdfDocument);
 
-        // remove the for-statement because we want to add the revocation information to the latest signature only.
-        List<String> signatureNames = new SignatureUtil(pdfDocument).getSignatureNames();
-        String signatureName = signatureNames.get(signatureNames.size() - 1);
-        // Add the CRL/OCSP validation information to the DSS Dictionary
-        boolean addVerification = validation.addVerification(signatureName, ocsp, crl, null);
+            // remove the for-statement because we want to add the revocation information to the latest signature only.
+            List<String> signatureNames = new SignatureUtil(pdfDocument).getSignatureNames();
+            String signatureName = signatureNames.get(signatureNames.size() - 1);
+            // Add the CRL/OCSP validation information to the DSS Dictionary
+            boolean addVerification = validation.addVerification(signatureName, ocsp, crl, null);
 
-        validation.merge(); // Merges the validation with any validation already in the document or creates a new one.
+            validation.merge();
 
-        if (Soap._debugMode) {
-            if (addVerification) {
-                System.out.println("\nOK merging LTV validation information to " + outputFilePath);
-            } else {
-                System.out.println("\nFAILED merging LTV validation information to " + outputFilePath);
+            if (Soap._debugMode) {
+                if (addVerification) {
+                    System.out.println("\nOK merging LTV validation information to " + outputFilePath);
+                } else {
+                    System.out.println("\nFAILED merging LTV validation information to " + outputFilePath);
+                }
             }
-        }
 
-        pdfDocument.close();
+            pdfDocument.close();
 
-        boolean delete = new File(outputFileTempPath).delete();
-        if (delete) {
-            System.out.println("\nTemp file deleted.");
+            boolean delete = new File(outputFileTempPath).delete();
+            if (delete) {
+                System.out.println("\nTemp file deleted.");
+            }
+        } catch (Exception e) {
+            throw new AisClientException(String.format("Failed to embed the signature(s) in the document(s) and close the streams - %s",
+                                                       trace.getId()));
         }
     }
 
     public String getInputFilePath() {
         return inputFilePath;
+    }
+
+    public String getOutputFilePath() {
+        return outputFilePath;
     }
 
     public String getId() {
@@ -261,11 +283,17 @@ public class PdfDocumentHandler implements Closeable {
 
     @Override
     public void close() {
+        closeResource(pdfReader);
+        closeResource(pdfWriter);
+        closeResource(pdfDocument);
+        closeResource(inMemoryStream);
+    }
+
+    private void closeResource(Closeable resource) {
         try {
-            pdfReader.close();
-            pdfWriter.close();
-            pdfDocument.close();
-            inMemoryStream.close();
+            if (Objects.nonNull(resource)) {
+                resource.close();
+            }
         } catch (IOException e) {
             // log this on debug
             System.out.printf("Failed to close the resources. Reason: %s", e.getMessage());

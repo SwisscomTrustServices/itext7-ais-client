@@ -10,16 +10,36 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.function.Function;
 
-public abstract class PropertiesLoader {
+public abstract class PropertiesLoader<T extends PropertiesLoader<?>> {
+
+    private static final String ENV_VARIABLE_PREFIX = "${";
+    private static final String ENV_VARIABLE_SUFFIX = "}";
+
+    public abstract T getCurrentContext();
 
     public abstract void setFromConfigurationProvider(ConfigurationProvider provider);
+
+    public T fromPropertiesClasspathFile(String fileName) {
+        setFromPropertiesClasspathFile(fileName);
+        return getCurrentContext();
+    }
 
     public void setFromPropertiesClasspathFile(String fileName) {
         setFromProperties(loadPropertiesFromClasspathFile(this.getClass(), fileName));
     }
 
+    public T fromPropertiesFile(String fileName) {
+        setFromPropertiesFile(fileName);
+        return getCurrentContext();
+    }
+
     public void setFromPropertiesFile(String fileName) {
         setFromProperties(PropertyUtils.loadPropertiesFromFile(fileName));
+    }
+
+    public T fromProperties(Properties properties) {
+        setFromProperties(properties);
+        return getCurrentContext();
     }
 
     public void setFromProperties(Properties properties) {
@@ -42,6 +62,19 @@ public abstract class PropertiesLoader {
 
     public int extractIntProperty(ConfigurationProvider provider, String propertyName) {
         return Integer.parseInt(extractProperty(provider, propertyName));
+    }
+
+    public String extractPasswordProperty(ConfigurationProvider provider, String propertyName) {
+        String property = extractProperty(provider, propertyName);
+        return shouldExtractFromEnvVariable(property) ? System.getenv(extractEnvPropertyName(property)) : property;
+    }
+
+    private boolean shouldExtractFromEnvVariable(String property) {
+        return property.startsWith(ENV_VARIABLE_PREFIX) && property.endsWith(ENV_VARIABLE_SUFFIX);
+    }
+
+    private String extractEnvPropertyName(String property) {
+        return property.substring(ENV_VARIABLE_PREFIX.length(), property.length() - ENV_VARIABLE_SUFFIX.length());
     }
 
     public <T> T extractProperty(ConfigurationProvider provider, String propertyName, Function<String, T> mapperFunction, T defaultValue) {

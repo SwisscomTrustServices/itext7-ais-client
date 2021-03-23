@@ -1,11 +1,14 @@
 package com.swisscom.ais.itext.client.service;
 
-import com.swisscom.ais.itext.client.impl.Soap;
+import com.swisscom.ais.itext.client.AisClient;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.config.LogbackConfiguration;
+import com.swisscom.ais.itext.client.impl.AisClientImpl;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
 import com.swisscom.ais.itext.client.model.ArgumentsContext;
 import com.swisscom.ais.itext.client.model.PdfMetadata;
+import com.swisscom.ais.itext.client.model.SignatureMode;
+import com.swisscom.ais.itext.client.model.SignatureResult;
 import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.rest.SignatureRestClient;
@@ -16,7 +19,6 @@ import com.swisscom.ais.itext.client.utils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,12 +33,21 @@ public class CliService {
     private static final DateTimeFormatter TIME_PATTERN = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final String TIME_PLACEHOLDER = "#time";
 
+    private final AisRequestService requestService;
+
     private ClientVersionProvider versionProvider;
     private ArgumentsService argumentsService;
     private AisClientConfiguration aisConfig;
-    private Properties properties;
     private SignatureRestClient restClient;
     private UserData userData;
+
+    public CliService() {
+        this.requestService = new AisRequestService();
+    }
+
+    public CliService(AisRequestService requestService) {
+        this.requestService = requestService;
+    }
 
     public Optional<ArgumentsContext> buildArgumentsContext(String[] args) {
         versionProvider = new ClientVersionProvider();
@@ -54,45 +65,57 @@ public class CliService {
         new LogbackConfiguration().init(context.getVerboseLevel());
         printStartupSummary(versionProvider, context);
 
-        properties = PropertyUtils.loadPropertiesFromFile(context.getConfigFile());
+        Properties properties = PropertyUtils.loadPropertiesFromFile(context.getConfigFile());
 
-        RestClientConfiguration restConfig = new RestClientConfiguration();
-        restConfig.setFromProperties(properties);
+        RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties);
 
-        restClient = new SignatureRestClientImpl().setConfiguration(restConfig);
+        restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-        aisConfig = new AisClientConfiguration();
-        aisConfig.setFromProperties(properties);
+        aisConfig = new AisClientConfiguration().fromProperties(properties);
 
-        userData = new UserData();
-        userData.setFromProperties(properties);
-        userData.setConsentUrlCallback(((consentUrl, data) -> {
-            System.out.println(SEPARATOR);
-            System.out.println("Consent URL for declaration of will available here: " + consentUrl);
-            System.out.println(SEPARATOR);
-        }));
+        userData = new UserData()
+            .fromProperties(properties)
+            .withConsentUrlCallback(((consentUrl, data) -> {
+                System.out.println(SEPARATOR);
+                System.out.println("Consent URL for declaration of will available here: " + consentUrl);
+                System.out.println(SEPARATOR);
+            }));
     }
 
-    public void performSignings(ArgumentsContext context) throws FileNotFoundException {
-        // todo use this
+    public void performSignings(ArgumentsContext context) {
         List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
             .map(inputFilePath -> new PdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
             .collect(Collectors.toList());
 
-        boolean verboseMode = context.getVerboseLevel().equals(VerboseLevel.BASIC);
-        boolean debugMode = context.getVerboseLevel().equals(VerboseLevel.MEDIUM);
-
-        Soap dss_soap = new Soap(verboseMode, debugMode, properties, aisConfig);
-
-        try {
-            for (PdfMetadata metadata : pdfsMetadata) {
-                dss_soap.sign(context.getSignature(), metadata, userData);
-            }
+        try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient, context.getVerboseLevel())) {
+            SignatureResult signatureResult = sign(client, pdfsMetadata, context.getSignature());
+            logResultInfo(signatureResult);
         } catch (Exception e) {
             if (!context.getVerboseLevel().equals(VerboseLevel.LOW)) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private SignatureResult sign(AisClient client, List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode) {
+        switch (signatureMode) {
+            case TIMESTAMP:
+                return client.signWithTimestamp(pdfsMetadata, userData);
+            case STATIC:
+                return client.signWithStaticCertificate(pdfsMetadata, userData);
+            case ON_DEMAND:
+                return client.signWithOnDemandCertificate(pdfsMetadata, userData);
+            case ON_DEMAND_WITH_STEP_UP:
+                return client.signWithOnDemandCertificateAndStepUp(pdfsMetadata, userData);
+            default:
+                throw new IllegalArgumentException(String.format("Invalid type. Can not sign the document(s) with the %s signature.", signatureMode));
+        }
+    }
+
+    private void logResultInfo(SignatureResult signatureResult) {
+        System.out.println(SEPARATOR);
+        System.out.println("Signature final result: " + signatureResult);
+        System.out.println(SEPARATOR);
     }
 
     private void printStartupSummary(ClientVersionProvider versionProvider, ArgumentsContext argumentsContext) {

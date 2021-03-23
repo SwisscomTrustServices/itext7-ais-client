@@ -7,7 +7,7 @@ package com.swisscom.ais.itext.client.model;
 public enum SignatureResult {
 
     /**
-     * The signature finished successfully. The signatures are already embedded in the PDF documents (see {@link PdfHandle}).
+     * The signature finished successfully. The signatures are already embedded in the PDF documents (see {@link PdfMetadata}).
      */
     SUCCESS,
 
@@ -29,6 +29,6 @@ public enum SignatureResult {
     /**
      * The user failed to properly authenticate for the signature.
      */
-    USER_AUTHENTICATION_FAILED;
+    USER_AUTHENTICATION_FAILED
 
 }
