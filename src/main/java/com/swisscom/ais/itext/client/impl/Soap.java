@@ -78,6 +78,7 @@ import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
 
+// todo DELETE THIS !!!
 public class Soap {
 
     /**
@@ -205,7 +206,7 @@ public class Soap {
             claimedIdentity = claimedIdentity.concat(":" + userData.getClaimedIdentityKey());
         }
 
-        PdfDocumentHandler pdf = new PdfDocumentHandler(metadata.getInputFilePath(), metadata.getOutputFilePath(), null, VerboseLevel.LOW);
+        PdfDocumentHandler pdf = new PdfDocumentHandler(metadata.getInputFilePath(), metadata.getOutputFilePath(), null);
 
         try {
             String requestId = getRequestId();

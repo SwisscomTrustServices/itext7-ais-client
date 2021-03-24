@@ -46,6 +46,7 @@ import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 
+// todo DELETE THIS !!!
 public class Connect {
 
     /**

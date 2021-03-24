@@ -18,7 +18,7 @@ public class ClientVersionProvider {
     private boolean isVersionInfoAvailable = false;
     private String versionInfo;
 
-    public void init() {
+    public void initialize() {
         try (InputStream inputStream = this.getClass().getResourceAsStream(PROPERTIES_RESOURCE_NAME)) {
             if (Objects.isNull(inputStream)) {
                 clientLogger.debug("No build.properties file was found in the iText AIS client JAR. Skipping version info logging");

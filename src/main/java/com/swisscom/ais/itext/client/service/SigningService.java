@@ -1,71 +1,52 @@
 package com.swisscom.ais.itext.client.service;
 
 import com.swisscom.ais.itext.client.AisClient;
+import com.swisscom.ais.itext.client.common.Loggers;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
-import com.swisscom.ais.itext.client.config.LogbackConfiguration;
 import com.swisscom.ais.itext.client.impl.AisClientImpl;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
-import com.swisscom.ais.itext.client.model.ArgumentsContext;
-import com.swisscom.ais.itext.client.model.PdfMetadata;
-import com.swisscom.ais.itext.client.model.SignatureMode;
-import com.swisscom.ais.itext.client.model.SignatureResult;
-import com.swisscom.ais.itext.client.model.UserData;
-import com.swisscom.ais.itext.client.model.VerboseLevel;
+import com.swisscom.ais.itext.client.model.*;
 import com.swisscom.ais.itext.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.utils.PropertyUtils;
 
-import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-public class CliService {
+public class SigningService {
 
-    private static final String SEPARATOR = "--------------------------------------------------------------------------------";
+    private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
+
+    public static final String SEPARATOR = "--------------------------------------------------------------------------------";
     private static final DateTimeFormatter TIME_PATTERN = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final String TIME_PLACEHOLDER = "#time";
 
     private final AisRequestService requestService;
+    private final ClientVersionProvider versionProvider;
 
-    private ClientVersionProvider versionProvider;
-    private ArgumentsService argumentsService;
     private AisClientConfiguration aisConfig;
     private SignatureRestClient restClient;
     private UserData userData;
 
-    public CliService() {
-        this.requestService = new AisRequestService();
-    }
-
-    public CliService(AisRequestService requestService) {
+    public SigningService(AisRequestService requestService, ClientVersionProvider versionProvider) {
         this.requestService = requestService;
+        this.versionProvider = versionProvider;
     }
 
-    public Optional<ArgumentsContext> buildArgumentsContext(String[] args) {
-        versionProvider = new ClientVersionProvider();
-        versionProvider.init();
-
-        argumentsService = new ArgumentsService(versionProvider);
-        return argumentsService.parseArguments(args, new File(StringUtils.EMPTY).getAbsolutePath());
+    public void prepareForSignings(ArgumentsContext context, ConsentUrlCallback consentUrlCallback) {
+        prepareForSignings(context, consentUrlCallback, PropertyUtils.loadPropertiesFromFile(context.getConfigFile()));
     }
 
-    public boolean isVerboseLevelActive() {
-        return argumentsService.isVerboseLevelActive();
-    }
-
-    public void prepareForSignings(ArgumentsContext context) {
-        new LogbackConfiguration().init(context.getVerboseLevel());
+    public void prepareForSignings(ArgumentsContext context, ConsentUrlCallback consentUrlCallback, Properties properties) {
         printStartupSummary(versionProvider, context);
-
-        Properties properties = PropertyUtils.loadPropertiesFromFile(context.getConfigFile());
 
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties);
 
@@ -73,13 +54,7 @@ public class CliService {
 
         aisConfig = new AisClientConfiguration().fromProperties(properties);
 
-        userData = new UserData()
-            .fromProperties(properties)
-            .withConsentUrlCallback(((consentUrl, data) -> {
-                System.out.println(SEPARATOR);
-                System.out.println("Consent URL for declaration of will available here: " + consentUrl);
-                System.out.println(SEPARATOR);
-            }));
+        userData = new UserData().fromProperties(properties).withConsentUrlCallback(consentUrlCallback);
     }
 
     public void performSignings(ArgumentsContext context) {
@@ -87,7 +62,7 @@ public class CliService {
             .map(inputFilePath -> new PdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
             .collect(Collectors.toList());
 
-        try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient, context.getVerboseLevel())) {
+        try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient)) {
             SignatureResult signatureResult = sign(client, pdfsMetadata, context.getSignature());
             logResultInfo(signatureResult);
         } catch (Exception e) {
@@ -113,27 +88,27 @@ public class CliService {
     }
 
     private void logResultInfo(SignatureResult signatureResult) {
-        System.out.println(SEPARATOR);
-        System.out.println("Signature final result: " + signatureResult);
-        System.out.println(SEPARATOR);
+        clientLogger.info(SEPARATOR);
+        clientLogger.info("Signature final result: {}", signatureResult);
+        clientLogger.info(SEPARATOR);
     }
 
     private void printStartupSummary(ClientVersionProvider versionProvider, ArgumentsContext argumentsContext) {
-        System.out.println(SEPARATOR);
+        clientLogger.info(SEPARATOR);
+        StringBuilder clientInfo = new StringBuilder("Swisscom AIS Client");
         if (versionProvider.isVersionInfoAvailable()) {
-            System.out.println("Swisscom AIS Client - " + versionProvider.getVersionInfo());
-        } else {
-            System.out.println("Swisscom AIS Client");
+            clientInfo.append(" - ").append(versionProvider.getVersionInfo());
         }
-        System.out.println(SEPARATOR);
-        System.out.println("Starting with following parameters:");
-        System.out.println("Config            : " + argumentsContext.getConfigFile());
-        System.out.println("Input file(s)     : " + String.join(", ", argumentsContext.getInputFiles()));
-        System.out.println("Output file       : " + argumentsContext.getOutputFile());
-        System.out.println("Suffix            : " + argumentsContext.getSuffix());
-        System.out.println("Type of signature : " + argumentsContext.getSignature());
-        System.out.println("Verbose level     : " + argumentsContext.getVerboseLevel());
-        System.out.println(SEPARATOR);
+        clientLogger.info(clientInfo.toString());
+        clientLogger.info(SEPARATOR);
+        clientLogger.info("Starting with the following parameters:");
+        clientLogger.info("Config: {}", argumentsContext.getConfigFile());
+        clientLogger.info("Input file(s): {}", String.join(", ", argumentsContext.getInputFiles()));
+        clientLogger.info("Output file: {}", argumentsContext.getOutputFile());
+        clientLogger.info("Suffix: {}", argumentsContext.getSuffix());
+        clientLogger.info("Type of signature: {}", argumentsContext.getSignature());
+        clientLogger.info("Verbose level: {}", argumentsContext.getVerboseLevel());
+        clientLogger.info(SEPARATOR);
     }
 
     private String retrieveOutputFileName(String inputFile, ArgumentsContext context) {

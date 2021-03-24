@@ -37,21 +37,17 @@ public class AisClientImpl implements AisClient {
     private final AisRequestService requestService;
     private final AisClientConfiguration configuration;
     private final SignatureRestClient restClient;
-    private final VerboseLevel loggingLevel;
 
     public AisClientImpl() {
         this.requestService = new AisRequestService();
         this.configuration = new AisClientConfiguration();
         this.restClient = new SignatureRestClientImpl();
-        this.loggingLevel = VerboseLevel.LOW;
     }
 
-    public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration, SignatureRestClient restClient,
-                         VerboseLevel loggingLevel) {
+    public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration, SignatureRestClient restClient) {
         this.requestService = requestService;
         this.configuration = configuration;
         this.restClient = restClient;
-        this.loggingLevel = loggingLevel;
     }
 
     @Override
@@ -130,8 +126,7 @@ public class AisClientImpl implements AisClient {
                                                             UserData userData, Trace trace) {
         try {
             clientLogger.info("Preparing {} document signing: {} - {}", signatureMode.getValue(), documentMetadata.getInputFilePath(), trace.getId());
-            PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputFilePath(), documentMetadata.getOutputFilePath(), trace,
-                                                                    loggingLevel);
+            PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputFilePath(), documentMetadata.getOutputFilePath(), trace);
             newDocument.prepareForSigning(documentMetadata.getDigestAlgorithm(), signatureType, userData);
             return newDocument;
         } catch (Exception e) {
