@@ -14,6 +14,10 @@ public class ValidationUtils {
 
     private static final String DELIMITER = " - ";
 
+    public static void notBlank(String value, String errorMessage) {
+        validateValue(value, StringUtils::isNotBlank, errorMessage, null);
+    }
+
     public static void notBlank(String value, String errorMessage, Trace trace) {
         validateValue(value, StringUtils::isNotBlank, errorMessage, trace);
     }
@@ -28,6 +32,10 @@ public class ValidationUtils {
 
     public static void between(int value, int minValue, int maxValue, String errorMessage) {
         validateValue(value, v -> ComparableUtils.is(v).between(minValue, maxValue), errorMessage, null);
+    }
+
+    public static void isPositive(int value, String errorMessage) {
+        validateValue(value, val -> val > 0, errorMessage, null);
     }
 
     private static <T> void validateValue(T value, Predicate<T> validValuePredicate, String errorMessage, Trace trace) {

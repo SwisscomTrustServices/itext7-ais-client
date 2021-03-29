@@ -10,40 +10,32 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.function.Function;
 
-public abstract class PropertiesLoader<T extends PropertiesLoader<?>> {
+public abstract class PropertiesLoader<T> {
 
     private static final String ENV_VARIABLE_PREFIX = "${";
     private static final String ENV_VARIABLE_SUFFIX = "}";
 
-    public abstract T getCurrentContext();
-
-    public abstract void setFromConfigurationProvider(ConfigurationProvider provider);
-
-    public T fromPropertiesClasspathFile(String fileName) {
-        setFromPropertiesClasspathFile(fileName);
-        return getCurrentContext();
+    protected PropertiesLoader() {
     }
 
-    public void setFromPropertiesClasspathFile(String fileName) {
-        setFromProperties(loadPropertiesFromClasspathFile(this.getClass(), fileName));
+    private static void validateProperty(String propertyName, String propertyValue) {
+        if (StringUtils.isBlank(propertyValue)) {
+            throw new IllegalStateException(String.format("Invalid configuration. The [%s] property is missing or is empty.", propertyName));
+        }
+    }
+
+    protected abstract T fromConfigurationProvider(ConfigurationProvider provider);
+
+    public T fromPropertiesClasspathFile(String fileName) {
+        return fromProperties(loadPropertiesFromClasspathFile(this.getClass(), fileName));
     }
 
     public T fromPropertiesFile(String fileName) {
-        setFromPropertiesFile(fileName);
-        return getCurrentContext();
-    }
-
-    public void setFromPropertiesFile(String fileName) {
-        setFromProperties(PropertyUtils.loadPropertiesFromFile(fileName));
+        return fromProperties(PropertyUtils.loadPropertiesFromFile(fileName));
     }
 
     public T fromProperties(Properties properties) {
-        setFromProperties(properties);
-        return getCurrentContext();
-    }
-
-    public void setFromProperties(Properties properties) {
-        setFromConfigurationProvider(new ConfigurationProviderPropertiesImpl(properties));
+        return fromConfigurationProvider(new ConfigurationProviderPropertiesImpl(properties));
     }
 
     public Properties loadPropertiesFromClasspathFile(Class<?> clazz, String filepath) {
@@ -77,7 +69,7 @@ public abstract class PropertiesLoader<T extends PropertiesLoader<?>> {
         return property.substring(ENV_VARIABLE_PREFIX.length(), property.length() - ENV_VARIABLE_SUFFIX.length());
     }
 
-    public <T> T extractProperty(ConfigurationProvider provider, String propertyName, Function<String, T> mapperFunction, T defaultValue) {
+    public <E> E extractProperty(ConfigurationProvider provider, String propertyName, Function<String, E> mapperFunction, E defaultValue) {
         String propertyValue = provider.getProperty(propertyName);
         return StringUtils.isNotBlank(propertyValue) ? mapperFunction.apply(propertyValue) : defaultValue;
     }
@@ -86,11 +78,5 @@ public abstract class PropertiesLoader<T extends PropertiesLoader<?>> {
         String propertyValue = provider.getProperty(propertyName);
         validateProperty(propertyName, propertyValue);
         return propertyValue;
-    }
-
-    private void validateProperty(String propertyName, String propertyValue) {
-        if (StringUtils.isBlank(propertyValue)) {
-            throw new IllegalStateException(String.format("Invalid configuration. The [%s] property is missing or is empty.", propertyName));
-        }
     }
 }

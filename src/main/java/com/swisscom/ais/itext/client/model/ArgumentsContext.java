@@ -16,6 +16,20 @@ public class ArgumentsContext {
     private ArgumentsContext() {
     }
 
+    public ArgumentsContext(List<String> inputFiles, String outputFile, String suffix, String configFile,
+                            SignatureMode signature, VerboseLevel verboseLevel) {
+        this.inputFiles = inputFiles;
+        this.outputFile = outputFile;
+        this.suffix = suffix;
+        this.configFile = configFile;
+        this.signature = signature;
+        this.verboseLevel = verboseLevel;
+    }
+
+    public static ArgumentsContext.Builder builder() {
+        return new Builder();
+    }
+
     public List<String> getInputFiles() {
         return inputFiles;
     }
@@ -79,37 +93,34 @@ public class ArgumentsContext {
         private SignatureMode signature;
         private VerboseLevel verboseLevel = VerboseLevel.LOW;
 
-        @SuppressWarnings("UnusedReturnValue")
+        Builder() {
+        }
+
         public Builder withInputFile(String inputFile) {
             inputFiles.add(inputFile);
             return this;
         }
 
-        @SuppressWarnings("UnusedReturnValue")
         public Builder withOutputFile(String outputFile) {
             this.outputFile = outputFile;
             return this;
         }
 
-        @SuppressWarnings("UnusedReturnValue")
         public Builder withSuffix(String suffix) {
             this.suffix = suffix;
             return this;
         }
 
-        @SuppressWarnings("UnusedReturnValue")
         public Builder withConfigFile(String configFile) {
             this.configFile = configFile;
             return this;
         }
 
-        @SuppressWarnings("UnusedReturnValue")
         public Builder withSignature(SignatureMode signature) {
             this.signature = signature;
             return this;
         }
 
-        @SuppressWarnings("UnusedReturnValue")
         public Builder withVerboseLevel(VerboseLevel verboseLevel) {
             if (this.verboseLevel.getImportance() < verboseLevel.getImportance()) {
                 this.verboseLevel = verboseLevel;
@@ -125,27 +136,36 @@ public class ArgumentsContext {
             return outputFile;
         }
 
-        public String getConfigFile() {
-            return configFile;
-        }
-
         public String getSuffix() {
             return suffix;
+        }
+
+        public String getConfigFile() {
+            return configFile;
         }
 
         public SignatureMode getSignature() {
             return signature;
         }
 
+        public VerboseLevel getVerboseLevel() {
+            return verboseLevel;
+        }
+
         public ArgumentsContext build() {
-            ArgumentsContext argumentsContext = new ArgumentsContext();
-            argumentsContext.inputFiles = this.inputFiles;
-            argumentsContext.outputFile = this.outputFile;
-            argumentsContext.suffix = this.suffix;
-            argumentsContext.configFile = this.configFile;
-            argumentsContext.signature = this.signature;
-            argumentsContext.verboseLevel = this.verboseLevel;
-            return argumentsContext;
+            return new ArgumentsContext(inputFiles, outputFile, suffix, configFile, signature, verboseLevel);
+        }
+
+        @Override
+        public String toString() {
+            return "ArgumentsContext.Builder{" +
+                   "inputFiles=" + inputFiles +
+                   ", outputFile='" + outputFile + '\'' +
+                   ", suffix='" + suffix + '\'' +
+                   ", configFile='" + configFile + '\'' +
+                   ", signature=" + signature +
+                   ", verboseLevel=" + verboseLevel +
+                   '}';
         }
     }
 }

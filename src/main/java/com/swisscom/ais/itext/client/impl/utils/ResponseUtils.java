@@ -2,14 +2,8 @@ package com.swisscom.ais.itext.client.impl.utils;
 
 import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.rest.model.ResultMajorCode;
-import com.swisscom.ais.itext.client.rest.model.signresp.AISSignResponse;
-import com.swisscom.ais.itext.client.rest.model.signresp.Result;
-import com.swisscom.ais.itext.client.rest.model.signresp.ScCRLs;
-import com.swisscom.ais.itext.client.rest.model.signresp.ScExtendedSignatureObject;
-import com.swisscom.ais.itext.client.rest.model.signresp.ScOCSPs;
-import com.swisscom.ais.itext.client.rest.model.signresp.ScRevocationInformation;
-
-import org.apache.commons.lang3.ObjectUtils;
+import com.swisscom.ais.itext.client.rest.model.signresp.*;
+import com.swisscom.ais.itext.client.utils.AisObjectUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,10 +21,9 @@ public class ResponseUtils {
     }
 
     public static boolean hasResponseStepUpConsentUrl(AISSignResponse response) {
-        return ObjectUtils.allNotNull(response, response.getSignResponse(), response.getSignResponse().getOptionalOutputs(),
-                                      response.getSignResponse().getOptionalOutputs().getScStepUpAuthorisationInfo(),
-                                      response.getSignResponse().getOptionalOutputs().getScStepUpAuthorisationInfo().getScResult(),
-                                      response.getSignResponse().getOptionalOutputs().getScStepUpAuthorisationInfo().getScResult().getScConsentURL());
+        return AisObjectUtils.allChildrenNotNull(response, AISSignResponse::getSignResponse, SignResponse::getOptionalOutputs,
+                                                 OptionalOutputs::getScStepUpAuthorisationInfo, ScStepUpAuthorisationInfo::getScResult,
+                                                 ScResult::getScConsentURL);
     }
 
     public static String extractStepUpConsentUrl(AISSignResponse response) {
@@ -63,16 +56,16 @@ public class ResponseUtils {
     }
 
     private static boolean isResponseMajorCode(AISSignResponse response, ResultMajorCode resultCode) {
-        return ObjectUtils.allNotNull(response, response.getSignResponse(), response.getSignResponse().getResult()) &&
+        return AisObjectUtils.allChildrenNotNull(response, AISSignResponse::getSignResponse, SignResponse::getResult) &&
                resultCode.getUri().equals(response.getSignResponse().getResult().getResultMajor());
     }
 
-    private static <T> List<String> extractScRevocationInfo(AISSignResponse response, Function<ScRevocationInformation, T> wrapperExtractFunction,
+    private static <T> List<String> extractScRevocationInfo(AISSignResponse response, Function<ScRevocationInformation, T> wrapperExtracter,
                                                             Function<T, List<String>> infoExtractFunction) {
-        if (ObjectUtils.allNotNull(response, response.getSignResponse(), response.getSignResponse().getOptionalOutputs(),
-                                   response.getSignResponse().getOptionalOutputs().getScRevocationInformation(),
-                                   wrapperExtractFunction.apply(response.getSignResponse().getOptionalOutputs().getScRevocationInformation()))) {
-            List<String> revocationInfo = infoExtractFunction.apply(wrapperExtractFunction.apply(
+        if (AisObjectUtils.allChildrenNotNull(response, AISSignResponse::getSignResponse, SignResponse::getOptionalOutputs,
+                                              OptionalOutputs::getScRevocationInformation)
+            && AisObjectUtils.allNotNull(wrapperExtracter.apply(response.getSignResponse().getOptionalOutputs().getScRevocationInformation()))) {
+            List<String> revocationInfo = infoExtractFunction.apply(wrapperExtracter.apply(
                 response.getSignResponse().getOptionalOutputs().getScRevocationInformation()));
             return Objects.nonNull(revocationInfo) ? revocationInfo : Collections.emptyList();
         }

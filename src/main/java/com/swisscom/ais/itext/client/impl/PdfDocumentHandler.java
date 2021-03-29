@@ -14,10 +14,16 @@ import com.swisscom.ais.itext.client.model.DigestAlgorithm;
 import com.swisscom.ais.itext.client.model.SignatureType;
 import com.swisscom.ais.itext.client.model.Trace;
 import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.utils.AisObjectUtils;
 import com.swisscom.ais.itext.client.utils.IdGenerator;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Enumerated;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
+import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -32,7 +38,12 @@ import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,7 +63,7 @@ public class PdfDocumentHandler implements Closeable {
     private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
     private PdfDocument pdfDocument;
-    private String outputFileTempPath;
+    private String outputTempFilePath;
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
@@ -138,13 +149,14 @@ public class PdfDocumentHandler implements Closeable {
                                                        " increased with %d bytes.", trace.getId(), externalSignature.length - estimatedSize));
         }
 
-        try (OutputStream outputStream = new FileOutputStream(outputFileTempPath)) {
+        try {
+            outputTempFilePath = Files.createTempFile("signed", "-temp.pdf").toString();
+            OutputStream outputStream = new FileOutputStream(outputTempFilePath);
             pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
-            outputFileTempPath = Files.createTempFile("signed", "-temp.pdf").toString();
             inMemoryStream.writeTo(outputStream);
 
-            processingLogger.debug("Writing signature to the output file {}", outputFileTempPath);
+            processingLogger.debug("Writing signature to the output file {}", outputTempFilePath);
 
             closeResource(pdfDocument);
             closeResource(inMemoryStream);
@@ -157,12 +169,12 @@ public class PdfDocumentHandler implements Closeable {
     /**
      * Add external revocation information to DSS Dictionary, to enable Long Term Validation (LTV) in Adobe Reader
      *
-     * @param encodedOcspEntries List of OCSP response in base64 encoding
      * @param encodedCrlEntries  List of CRL response in base64 encoding
+     * @param encodedOcspEntries List of OCSP response in base64 encoding
      */
     // todo maybe try to embed the revocation info in the previous step
-    public void addValidationInformation(List<String> encodedOcspEntries, List<String> encodedCrlEntries) {
-        if (ObjectUtils.allNull(encodedOcspEntries, encodedCrlEntries)) {
+    public void addValidationInformation(List<String> encodedCrlEntries, List<String> encodedOcspEntries) {
+        if (AisObjectUtils.allNull(encodedCrlEntries, encodedOcspEntries)) {
             return;
         }
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
@@ -173,7 +185,7 @@ public class PdfDocumentHandler implements Closeable {
         List<byte[]> crl = mapEncodedEntries(encodedCrlEntries, this::mapEncodedCrl);
         List<byte[]> ocsp = mapEncodedEntries(encodedOcspEntries, this::mapEncodedOcsp);
 
-        try (PdfReader reader = new PdfReader(outputFileTempPath);
+        try (PdfReader reader = new PdfReader(outputTempFilePath);
              PdfWriter writer = new PdfWriter(outputFilePath);
              PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode())) {
             LtvVerification validation = new LtvVerification(pdfDocument);
@@ -184,7 +196,7 @@ public class PdfDocumentHandler implements Closeable {
             validation.merge();
             logSignatureVerificationInfo(isSignatureVerificationAdded);
 
-            boolean isTempFileDeleted = new File(outputFileTempPath).delete();
+            boolean isTempFileDeleted = new File(outputTempFilePath).delete();
             logTempFileInfo(isTempFileDeleted);
         } catch (Exception e) {
             throw new AisClientException(String.format("Failed to embed the signature(s) in the document(s) and close the streams - %s",
@@ -253,10 +265,20 @@ public class PdfDocumentHandler implements Closeable {
             OCSPResp ocspResp = new OCSPResp(inputStream);
             BasicOCSPResp basicResp = (BasicOCSPResp) ocspResp.getResponseObject();
             logOcspInfo(ocspResp, basicResp);
-            return basicResp.getEncoded();
+            return prepareEncodedOcsp(basicResp.getEncoded());
         } catch (IOException | OCSPException e) {
             throw new AisClientException("Failed to map the received encoded OCSP entry", e);
         }
+    }
+
+    private byte[] prepareEncodedOcsp(byte[] content) throws IOException {
+        ASN1EncodableVector v2 = new ASN1EncodableVector();
+        v2.add(OCSPObjectIdentifiers.id_pkix_ocsp_basic);
+        v2.add(new DEROctetString(content));
+        ASN1EncodableVector v3 = new ASN1EncodableVector();
+        v3.add(new ASN1Enumerated(0));
+        v3.add(new DERTaggedObject(true, 0, new DERSequence(v2)));
+        return new DERSequence(v3).getEncoded();
     }
 
     private void logCrlInfo(X509CRL x509crl) {

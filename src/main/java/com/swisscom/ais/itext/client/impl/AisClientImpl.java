@@ -5,7 +5,12 @@ import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.common.Loggers;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.impl.utils.ResponseUtils;
-import com.swisscom.ais.itext.client.model.*;
+import com.swisscom.ais.itext.client.model.PdfMetadata;
+import com.swisscom.ais.itext.client.model.SignatureMode;
+import com.swisscom.ais.itext.client.model.SignatureResult;
+import com.swisscom.ais.itext.client.model.SignatureType;
+import com.swisscom.ais.itext.client.model.Trace;
+import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.model.AdditionalProfile;
@@ -17,10 +22,11 @@ import com.swisscom.ais.itext.client.rest.model.signreq.AISSignRequest;
 import com.swisscom.ais.itext.client.rest.model.signresp.AISSignResponse;
 import com.swisscom.ais.itext.client.rest.model.signresp.Result;
 import com.swisscom.ais.itext.client.rest.model.signresp.ScExtendedSignatureObject;
+import com.swisscom.ais.itext.client.rest.model.signresp.SignResponse;
 import com.swisscom.ais.itext.client.rest.model.signresp.SignatureObject;
 import com.swisscom.ais.itext.client.service.AisRequestService;
+import com.swisscom.ais.itext.client.utils.AisObjectUtils;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +90,7 @@ public class AisClientImpl implements AisClient {
         List<PdfDocumentHandler> documents = prepareMultipleDocumentsForSigning(documentsMetadata, signatureMode, signatureType, userData, trace);
 
         try {
-            List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, !documents.isEmpty());
+            List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, documents);
             AISSignRequest signRequest = requestService.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
                                                                             signWithStepUp, signWithCertificateRequest);
             AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
@@ -101,7 +107,7 @@ public class AisClientImpl implements AisClient {
             finishDocumentsSigning(documents, signResponse, signatureMode, signatureType.getEstimatedSignatureSizeInBytes(), trace);
             return SignatureResult.SUCCESS;
         } catch (Exception e) {
-            throw new AisClientException("Failed to communicate with the AIS service and obtain the signature(s) - " + trace.getId(), e);
+            throw new AisClientException("Failed to communicate with the AIS service for obtaining the signature(s) - " + trace.getId(), e);
         } finally {
             documents.forEach(PdfDocumentHandler::close);
         }
@@ -135,17 +141,16 @@ public class AisClientImpl implements AisClient {
         }
     }
 
-    private List<AdditionalProfile> prepareAdditionalProfiles(List<AdditionalProfile> defaultProfiles, boolean signMultipleDocuments) {
+    private List<AdditionalProfile> prepareAdditionalProfiles(List<AdditionalProfile> defaultProfiles, List<PdfDocumentHandler> documents) {
         List<AdditionalProfile> profiles = Objects.nonNull(defaultProfiles) ? new ArrayList<>(defaultProfiles) : new ArrayList<>();
-        if (signMultipleDocuments) {
+        if (documents.size() > 1) {
             profiles.add(AdditionalProfile.BATCH);
         }
         return profiles;
     }
 
     private SignatureResult extractSignatureResultFromResponse(AISSignResponse response, Trace trace) {
-        if (ObjectUtils.anyNull(response, response.getSignResponse(), response.getSignResponse().getResult(),
-                                response.getSignResponse().getResult().getResultMajor())) {
+        if (AisObjectUtils.firstChildNull(response, AISSignResponse::getSignResponse, SignResponse::getResult, Result::getResultMajor)) {
             throw new AisClientException(String.format("Incomplete response received from the AIS service: %s - %s", response, trace.getId()));
         }
         Result responseResult = response.getSignResponse().getResult();
@@ -251,7 +256,7 @@ public class AisClientImpl implements AisClient {
             clientLogger.info("Finalizing the signature for document: {} - {}", document.getOutputFilePath(), trace.getId());
             String encodedSignature = extractEncodedSignature(response, containsSingleDocument, signatureMode, document);
             document.createSignedPdf(Base64.getDecoder().decode(encodedSignature), signatureEstimatedSize);
-            document.addValidationInformation(encodedOcspEntries, encodedCrlEntries);
+            document.addValidationInformation(encodedCrlEntries, encodedOcspEntries);
         });
     }
 

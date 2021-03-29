@@ -8,10 +8,20 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
 
     private static final String INTERVAL_IN_SECONDS_POLL_PROPERTY = "client.poll.intervalInSeconds";
     private static final String ROUNDS_POLL_PROPERTY = "client.poll.rounds";
+    private static final int DEFAULT_SIGNATURE_POLLING_INTERVAL_IN_SECONDS = 10;
+    private static final int DEFAULT_SIGNATURE_POLLING_ROUNDS = 10;
 
-    private int signaturePollingIntervalInSeconds = 10;
+    private int signaturePollingIntervalInSeconds = DEFAULT_SIGNATURE_POLLING_INTERVAL_IN_SECONDS;
+    private int signaturePollingRounds = DEFAULT_SIGNATURE_POLLING_ROUNDS;
 
-    private int signaturePollingRounds = 10;
+    public AisClientConfiguration() {
+        super();
+    }
+
+    public AisClientConfiguration(int signaturePollingIntervalInSeconds, int signaturePollingRounds) {
+        this.signaturePollingIntervalInSeconds = signaturePollingIntervalInSeconds;
+        this.signaturePollingRounds = signaturePollingRounds;
+    }
 
     public int getSignaturePollingIntervalInSeconds() {
         return signaturePollingIntervalInSeconds;
@@ -34,13 +44,9 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
     }
 
     @Override
-    public AisClientConfiguration getCurrentContext() {
-        return this;
-    }
-
-    @Override
-    public void setFromConfigurationProvider(ConfigurationProvider provider) {
+    protected AisClientConfiguration fromConfigurationProvider(ConfigurationProvider provider) {
         setSignaturePollingIntervalInSeconds(extractIntProperty(provider, INTERVAL_IN_SECONDS_POLL_PROPERTY));
         setSignaturePollingRounds(extractIntProperty(provider, ROUNDS_POLL_PROPERTY));
+        return this;
     }
 }

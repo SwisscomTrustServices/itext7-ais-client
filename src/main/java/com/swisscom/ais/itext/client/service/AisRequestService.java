@@ -70,7 +70,7 @@ public class AisRequestService {
 
         ClaimedIdentity claimedIdentity = new ClaimedIdentity();
         StringJoiner claimedIdentityJoiner = new StringJoiner(CLAIMED_IDENTITY_DELIMITER);
-        claimedIdentityJoiner.setEmptyValue(userData.getClaimedIdentityName());
+        claimedIdentityJoiner.add(userData.getClaimedIdentityName());
         if (!signatureMode.equals(SignatureMode.TIMESTAMP) && StringUtils.isNotBlank(userData.getClaimedIdentityKey())) {
             claimedIdentityJoiner.add(userData.getClaimedIdentityKey());
         }
@@ -95,14 +95,14 @@ public class AisRequestService {
         }
 
         ScAddRevocationInformation addRevocationInformation = new ScAddRevocationInformation();
-        if (userData.getAddRevocationInformation().equals(RevocationInformation.DEFAULT)) {
+        if (userData.getRevocationInformation().equals(RevocationInformation.DEFAULT)) {
             if (signatureMode.equals(SignatureMode.TIMESTAMP)) {
                 addRevocationInformation.setType(RevocationInformation.BOTH.getValue());
             } else {
                 addRevocationInformation.setType(null);
             }
         } else {
-            addRevocationInformation.setType(userData.getAddRevocationInformation().getValue());
+            addRevocationInformation.setType(userData.getRevocationInformation().getValue());
         }
 
         OptionalInputs optionalInputs = new OptionalInputs()

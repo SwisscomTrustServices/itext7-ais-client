@@ -15,6 +15,13 @@ public class LogbackConfiguration {
 
     private static final String ORG_APACHE_HC = "org.apache.hc";
 
+    private static void setLoggerLevel(String loggerName, Level level, LoggerContext loggerContext) {
+        Logger logger = loggerContext.getLogger(loggerName);
+        if (Objects.nonNull(logger)) {
+            logger.setLevel(level);
+        }
+    }
+
     public void initialize(VerboseLevel verboseLevel) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
@@ -53,13 +60,6 @@ public class LogbackConfiguration {
                 setLoggerLevel(ORG_APACHE_HC, verboseLevel.equals(VerboseLevel.MEDIUM) ? Level.INFO : Level.TRACE, loggerContext);
                 break;
             }
-        }
-    }
-
-    private static void setLoggerLevel(String loggerName, Level level, LoggerContext loggerContext) {
-        Logger logger = loggerContext.getLogger(loggerName);
-        if (Objects.nonNull(logger)) {
-            logger.setLevel(level);
         }
     }
 }

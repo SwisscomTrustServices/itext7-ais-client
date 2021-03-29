@@ -2,7 +2,6 @@ package com.swisscom.ais.itext.client.common;
 
 public class Loggers {
 
-    // todo if only those are used, transform them into enum
     public static final String CLIENT = "swisscom.ais.itext.client";
     public static final String CONFIG = "swisscom.ais.itext.client.config";
     public static final String CLIENT_PROTOCOL = "swisscom.ais.itext.client.protocol";

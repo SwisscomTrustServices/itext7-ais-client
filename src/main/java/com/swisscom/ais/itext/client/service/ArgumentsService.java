@@ -5,9 +5,9 @@ import com.swisscom.ais.itext.client.model.ArgumentsContext;
 import com.swisscom.ais.itext.client.model.CliArgument;
 import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
+import com.swisscom.ais.itext.client.utils.AisObjectUtils;
 import com.swisscom.ais.itext.client.utils.FileUtils;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.File;
@@ -39,7 +39,7 @@ public class ArgumentsService {
 
     public Optional<ArgumentsContext> parseArguments(String[] args, String startDirPath) {
         Iterator<String> argsIterator = Arrays.stream(args).iterator();
-        ArgumentsContext.Builder argsContextBuilder = new ArgumentsContext.Builder();
+        ArgumentsContext.Builder argsContextBuilder = ArgumentsContext.builder();
 
         while (argsIterator.hasNext()) {
             String currentArg = extractNextArgument(argsIterator);
@@ -183,13 +183,13 @@ public class ArgumentsService {
         if (Objects.isNull(context.getConfigFile())) {
             context.withConfigFile(DEFAULT_CONFIG_FILE);
         }
-        if (ObjectUtils.allNull(context.getOutputFile(), context.getSuffix())) {
+        if (AisObjectUtils.allNull(context.getOutputFile(), context.getSuffix())) {
             context.withSuffix(DEFAULT_SUFFIX);
         }
         if (context.getInputFiles().isEmpty()) {
             throw new IllegalArgumentException("Input file name is missing.");
         }
-        if (ObjectUtils.allNotNull(context.getOutputFile(), context.getSuffix())) {
+        if (AisObjectUtils.allNotNull(context.getOutputFile(), context.getSuffix())) {
             throw new IllegalArgumentException("Both output and suffix are configured. Only one of them can be used.");
         }
         if (Objects.nonNull(context.getOutputFile()) && context.getInputFiles().size() > 1) {

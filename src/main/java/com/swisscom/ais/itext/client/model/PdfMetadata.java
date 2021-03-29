@@ -18,6 +18,11 @@ public class PdfMetadata {
         this.outputFilePath = outputFilePath;
     }
 
+    public PdfMetadata(String inputFilePath, String outputFilePath, DigestAlgorithm digestAlgorithm) {
+        this(inputFilePath, outputFilePath);
+        this.digestAlgorithm = digestAlgorithm;
+    }
+
     public String getInputFilePath() {
         return inputFilePath;
     }

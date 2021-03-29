@@ -5,7 +5,11 @@ import com.swisscom.ais.itext.client.common.Loggers;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.impl.AisClientImpl;
 import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
-import com.swisscom.ais.itext.client.model.*;
+import com.swisscom.ais.itext.client.model.ArgumentsContext;
+import com.swisscom.ais.itext.client.model.PdfMetadata;
+import com.swisscom.ais.itext.client.model.SignatureMode;
+import com.swisscom.ais.itext.client.model.SignatureResult;
+import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
@@ -23,56 +27,76 @@ import java.util.stream.Collectors;
 
 public class SigningService {
 
-    private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
-
     public static final String SEPARATOR = "--------------------------------------------------------------------------------";
+    private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
     private static final DateTimeFormatter TIME_PATTERN = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final String TIME_PLACEHOLDER = "#time";
 
     private final AisRequestService requestService;
-    private final ClientVersionProvider versionProvider;
 
+    private ClientVersionProvider versionProvider;
     private AisClientConfiguration aisConfig;
     private SignatureRestClient restClient;
-    private UserData userData;
+
+    public SigningService(AisRequestService requestService) {
+        this.requestService = requestService;
+    }
 
     public SigningService(AisRequestService requestService, ClientVersionProvider versionProvider) {
         this.requestService = requestService;
         this.versionProvider = versionProvider;
     }
 
-    public void prepareForSignings(ArgumentsContext context, ConsentUrlCallback consentUrlCallback) {
-        prepareForSignings(context, consentUrlCallback, PropertyUtils.loadPropertiesFromFile(context.getConfigFile()));
+    public void initialize(String configFilePath) {
+        initialize(PropertyUtils.loadPropertiesFromFile(configFilePath));
     }
 
-    public void prepareForSignings(ArgumentsContext context, ConsentUrlCallback consentUrlCallback, Properties properties) {
-        printStartupSummary(versionProvider, context);
-
-        RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties);
-
-        restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
-
+    public void initialize(Properties properties) {
         aisConfig = new AisClientConfiguration().fromProperties(properties);
-
-        userData = new UserData().fromProperties(properties).withConsentUrlCallback(consentUrlCallback);
+        RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
+        restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
     }
 
-    public void performSignings(ArgumentsContext context) {
+    public void initialize(AisClientConfiguration builtAisConfig, SignatureRestClient builtRestClient) {
+        aisConfig = builtAisConfig;
+        restClient = builtRestClient;
+    }
+
+    public SignatureResult performSignings(ArgumentsContext context, UserData userData) throws Exception {
         List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
             .map(inputFilePath -> new PdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
             .collect(Collectors.toList());
 
+        return performSignings(pdfsMetadata, context.getSignature(), userData);
+    }
+
+    public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) throws Exception {
         try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient)) {
-            SignatureResult signatureResult = sign(client, pdfsMetadata, context.getSignature());
+            SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
             logResultInfo(signatureResult);
-        } catch (Exception e) {
-            if (!context.getVerboseLevel().equals(VerboseLevel.LOW)) {
-                e.printStackTrace();
-            }
+            return signatureResult;
         }
     }
 
-    private SignatureResult sign(AisClient client, List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode) {
+    public void printStartupSummary(ArgumentsContext context) {
+        clientLogger.info(SEPARATOR);
+        StringBuilder clientInfo = new StringBuilder("Swisscom AIS Client");
+        if (Objects.nonNull(versionProvider) && versionProvider.isVersionInfoAvailable()) {
+            clientInfo.append(" - ").append(versionProvider.getVersionInfo());
+        }
+        clientLogger.info(clientInfo.toString());
+        clientLogger.info(SEPARATOR);
+        clientLogger.info("Starting with the following parameters:");
+        clientLogger.info("Config: {}", context.getConfigFile());
+        clientLogger.info("Input file(s): {}", String.join(", ", context.getInputFiles()));
+        clientLogger.info("Output file: {}", context.getOutputFile());
+        clientLogger.info("Suffix: {}", context.getSuffix());
+        clientLogger.info("Type of signature: {}", context.getSignature());
+        clientLogger.info("Verbose level: {}", context.getVerboseLevel());
+        clientLogger.info(SEPARATOR);
+    }
+
+    private SignatureResult sign(AisClient client, List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) {
         switch (signatureMode) {
             case TIMESTAMP:
                 return client.signWithTimestamp(pdfsMetadata, userData);
@@ -89,25 +113,7 @@ public class SigningService {
 
     private void logResultInfo(SignatureResult signatureResult) {
         clientLogger.info(SEPARATOR);
-        clientLogger.info("Signature final result: {}", signatureResult);
-        clientLogger.info(SEPARATOR);
-    }
-
-    private void printStartupSummary(ClientVersionProvider versionProvider, ArgumentsContext argumentsContext) {
-        clientLogger.info(SEPARATOR);
-        StringBuilder clientInfo = new StringBuilder("Swisscom AIS Client");
-        if (versionProvider.isVersionInfoAvailable()) {
-            clientInfo.append(" - ").append(versionProvider.getVersionInfo());
-        }
-        clientLogger.info(clientInfo.toString());
-        clientLogger.info(SEPARATOR);
-        clientLogger.info("Starting with the following parameters:");
-        clientLogger.info("Config: {}", argumentsContext.getConfigFile());
-        clientLogger.info("Input file(s): {}", String.join(", ", argumentsContext.getInputFiles()));
-        clientLogger.info("Output file: {}", argumentsContext.getOutputFile());
-        clientLogger.info("Suffix: {}", argumentsContext.getSuffix());
-        clientLogger.info("Type of signature: {}", argumentsContext.getSignature());
-        clientLogger.info("Verbose level: {}", argumentsContext.getVerboseLevel());
+        clientLogger.info("Signature(s) final result: {}", signatureResult);
         clientLogger.info(SEPARATOR);
     }
 

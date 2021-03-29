@@ -1,0 +1,64 @@
+package com.swisscom.ais.itext;
+
+import com.swisscom.ais.itext.client.config.AisClientConfiguration;
+import com.swisscom.ais.itext.client.impl.AisClientImpl;
+import com.swisscom.ais.itext.client.model.DigestAlgorithm;
+import com.swisscom.ais.itext.client.model.PdfMetadata;
+import com.swisscom.ais.itext.client.model.SignatureResult;
+import com.swisscom.ais.itext.client.model.SignatureStandard;
+import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.rest.SignatureRestClient;
+import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
+import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
+import com.swisscom.ais.itext.client.service.AisRequestService;
+
+import java.io.IOException;
+import java.util.Collections;
+
+/**
+ * Test that shows how to configure the REST and AIS clients from the code. This can also be switched to configuration via the Spring framework or
+ * other similar DI frameworks.
+ */
+public class TestFullyProgrammaticConfiguration {
+
+    public static void main(String[] args) throws IOException {
+        // configuration for the REST client; this is done once per application lifetime
+        RestClientConfiguration restConfig = RestClientConfiguration.builder()
+            .withServiceSignUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/sign")
+            .withServicePendingUrl("https://ais.s.wisscom.com/AIS-Server/rs/v1.0/pending")
+            .withServerCertificateFile("/home/user/ais-server.crt")
+            .withClientKeyFile("/home/user/ais-client.key")
+            .withClientKeyPassword("secret")
+            .withClientCertificateFile("/home/user/ais-client.crt")
+            .build();
+
+        SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
+
+        // then configure the AIS client; this is done once per application lifetime
+        AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10);
+
+        try (AisClientImpl aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+            // third, configure a UserData instance with details about this signature
+            // this is done for each signature (can also be created once and cached on a per-user basis)
+            UserData userData = UserData.builder()
+                .withClaimedIdentityName("ais-90days-trial")
+                .withClaimedIdentityKey("keyEntity")
+                .withDistinguishedName("cn=TEST User, givenname=Max, surname=Maximus, c=US, serialnumber=abcdefabcdefabcdefabcdefabcdef")
+                .withStepUpLanguage("en")
+                .withStepUpMessage("Please confirm the signing of the document")
+                .withStepUpMsisdn("40799999999")
+                .withSignatureReason("For testing purposes")
+                .withSignatureLocation("Topeka, Kansas")
+                .withSignatureContactInfo("test@test.com")
+                .withSignatureStandard(SignatureStandard.PDF)
+                .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
+                .build();
+
+            // fourth, populate a PdfHandle with details about the document to be signed. More than one PdfHandle can be given
+            PdfMetadata document = new PdfMetadata("/home/user/input.pdf", "/home/user/signed-output.pdf", DigestAlgorithm.SHA256);
+
+            SignatureResult signatureResult = aisClient.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
+            System.out.println("Finish to sign the document(s) with the status: " + signatureResult);
+        }
+    }
+}
