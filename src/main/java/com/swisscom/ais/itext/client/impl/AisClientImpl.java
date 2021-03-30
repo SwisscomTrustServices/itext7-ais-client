@@ -95,10 +95,10 @@ public class AisClientImpl implements AisClient {
                                                                             signWithStepUp, signWithCertificateRequest);
             AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
 
-            if (!ResponseUtils.isResponseAsyncPending(signResponse)) {
+            if (signWithStepUp && !ResponseUtils.isResponseAsyncPending(signResponse)) {
                 return extractSignatureResultFromResponse(signResponse, trace);
             }
-            if (signatureMode.equals(SignatureMode.ON_DEMAND_WITH_STEP_UP)) {
+            if (signWithStepUp) {
                 signResponse = pollUntilSignatureIsComplete(signResponse, userData, trace);
             }
             if (!ResponseUtils.isResponseMajorSuccess(signResponse)) {

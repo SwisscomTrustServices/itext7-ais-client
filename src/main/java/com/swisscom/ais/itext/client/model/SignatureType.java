@@ -5,12 +5,12 @@ public enum SignatureType {
     /**
      * CMS signature (RFC 3369).
      */
-    CMS("urn:ietf:rfc:3369", 30000),
+    CMS("urn:ietf:rfc:3369", 30_000),
 
     /**
      * Timestamp signature (RFC 3161).
      */
-    TIMESTAMP("urn:ietf:rfc:3161", 15000);
+    TIMESTAMP("urn:ietf:rfc:3161", 15_000);
 
     /**
      * URI of the signature type.

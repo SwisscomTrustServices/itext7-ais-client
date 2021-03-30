@@ -33,7 +33,7 @@ public enum SignatureStandard {
     /**
      * PAdES compliant signature, which returns the revocation information as optional output.
      * In order to get an LTV-enabled PDF signature, the client must process the optional output and fill the PDF's DSS (this AIS client
-     * library already does this for your). This is in contrast with the PDF option (see above) that embeds the revocation information
+     * library already does this for you). This is in contrast with the PDF option (see above) that embeds the revocation information
      * as an archival attribute inside the CMS content, which might trip some strict checkers (e.g. ETSI Signature Conformance Checker).
      */
     PADES_BASELINE("PAdES-baseline"),

@@ -1,6 +1,5 @@
 package com.swisscom.ais.itext.client.impl;
 
-import com.itextpdf.io.codec.Base64;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.signatures.LtvVerification;
 import com.itextpdf.signatures.PdfSigner;
@@ -38,6 +37,7 @@ import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -221,7 +221,7 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     public String getEncodedDocumentHash() {
-        return java.util.Base64.getEncoder().encodeToString(documentHash);
+        return Base64.getEncoder().encodeToString(documentHash);
     }
 
     public DigestAlgorithm getDigestAlgorithm() {
@@ -251,7 +251,7 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     private byte[] mapEncodedCrl(String encodedCrl) {
-        try (InputStream inputStream = new ByteArrayInputStream(Base64.decode(encodedCrl))) {
+        try (InputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(encodedCrl))) {
             X509CRL x509crl = (X509CRL) CertificateFactory.getInstance("X.509").generateCRL(inputStream);
             logCrlInfo(x509crl);
             return x509crl.getEncoded();
@@ -261,24 +261,14 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     private byte[] mapEncodedOcsp(String encodedOcsp) {
-        try (InputStream inputStream = new ByteArrayInputStream(Base64.decode(encodedOcsp))) {
+        try (InputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(encodedOcsp))) {
             OCSPResp ocspResp = new OCSPResp(inputStream);
             BasicOCSPResp basicResp = (BasicOCSPResp) ocspResp.getResponseObject();
             logOcspInfo(ocspResp, basicResp);
-            return prepareEncodedOcsp(basicResp.getEncoded());
+            return basicResp.getEncoded();
         } catch (IOException | OCSPException e) {
             throw new AisClientException("Failed to map the received encoded OCSP entry", e);
         }
-    }
-
-    private byte[] prepareEncodedOcsp(byte[] content) throws IOException {
-        ASN1EncodableVector v2 = new ASN1EncodableVector();
-        v2.add(OCSPObjectIdentifiers.id_pkix_ocsp_basic);
-        v2.add(new DEROctetString(content));
-        ASN1EncodableVector v3 = new ASN1EncodableVector();
-        v3.add(new ASN1Enumerated(0));
-        v3.add(new DERTaggedObject(true, 0, new DERSequence(v2)));
-        return new DERSequence(v3).getEncoded();
     }
 
     private void logCrlInfo(X509CRL x509crl) {
