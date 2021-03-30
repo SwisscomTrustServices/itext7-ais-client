@@ -17,12 +17,7 @@ import com.swisscom.ais.itext.client.utils.AisObjectUtils;
 import com.swisscom.ais.itext.client.utils.IdGenerator;
 
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Enumerated;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERTaggedObject;
-import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -31,19 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
-import java.util.Base64;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,6 +41,7 @@ import javax.annotation.Nonnull;
 public class PdfDocumentHandler implements Closeable {
 
     private static final Logger processingLogger = LoggerFactory.getLogger(Loggers.PDF_PROCESSING);
+    private static final String DELIMITER = "; ";
 
     private final String inputFilePath;
     private final String outputFilePath;
@@ -63,7 +53,7 @@ public class PdfDocumentHandler implements Closeable {
     private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
     private PdfDocument pdfDocument;
-    private String outputTempFilePath;
+    private File outputTempFile;
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
@@ -150,13 +140,13 @@ public class PdfDocumentHandler implements Closeable {
         }
 
         try {
-            outputTempFilePath = Files.createTempFile("signed", "-temp.pdf").toString();
-            OutputStream outputStream = new FileOutputStream(outputTempFilePath);
+            outputTempFile = File.createTempFile("signed", "-temp.pdf");
+            OutputStream outputStream = new FileOutputStream(outputTempFile);
             pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
             inMemoryStream.writeTo(outputStream);
 
-            processingLogger.debug("Writing signature to the output file {}", outputTempFilePath);
+            processingLogger.debug("Writing signature to the temp output file {} - {}", outputTempFile.getPath(), trace.getId());
 
             closeResource(pdfDocument);
             closeResource(inMemoryStream);
@@ -178,14 +168,14 @@ public class PdfDocumentHandler implements Closeable {
             return;
         }
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
-            throw new AisClientException("Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a certification "
-                                         + " that does not allow any changes.");
+            throw new AisClientException(String.format("Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a " +
+                                                       "certification that does not allow any changes - %s", trace.getId()));
         }
 
         List<byte[]> crl = mapEncodedEntries(encodedCrlEntries, this::mapEncodedCrl);
         List<byte[]> ocsp = mapEncodedEntries(encodedOcspEntries, this::mapEncodedOcsp);
 
-        try (PdfReader reader = new PdfReader(outputTempFilePath);
+        try (PdfReader reader = new PdfReader(outputTempFile);
              PdfWriter writer = new PdfWriter(outputFilePath);
              PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode())) {
             LtvVerification validation = new LtvVerification(pdfDocument);
@@ -195,9 +185,6 @@ public class PdfDocumentHandler implements Closeable {
             boolean isSignatureVerificationAdded = validation.addVerification(signatureName, ocsp, crl, null);
             validation.merge();
             logSignatureVerificationInfo(isSignatureVerificationAdded);
-
-            boolean isTempFileDeleted = new File(outputTempFilePath).delete();
-            logTempFileInfo(isTempFileDeleted);
         } catch (Exception e) {
             throw new AisClientException(String.format("Failed to embed the signature(s) in the document(s) and close the streams - %s",
                                                        trace.getId()));
@@ -230,17 +217,9 @@ public class PdfDocumentHandler implements Closeable {
 
     private void logSignatureVerificationInfo(boolean isSignatureVerificationAdded) {
         if (isSignatureVerificationAdded) {
-            processingLogger.info("Merged LTV validation information to the output file {}", outputFilePath);
+            processingLogger.info("Merged LTV validation information to the output file {} - {}", outputFilePath, trace.getId());
         } else {
-            processingLogger.warn("Failed to merge LTV validation information to the output file {}", outputFilePath);
-        }
-    }
-
-    private void logTempFileInfo(boolean isTempFileDeleted) {
-        if (isTempFileDeleted) {
-            processingLogger.debug("Temp file deleted");
-        } else {
-            processingLogger.warn("Could not delete the temp file");
+            processingLogger.warn("Failed to merge LTV validation information to the output file {} - {}", outputFilePath, trace.getId());
         }
     }
 
@@ -256,7 +235,7 @@ public class PdfDocumentHandler implements Closeable {
             logCrlInfo(x509crl);
             return x509crl.getEncoded();
         } catch (IOException | CertificateException | CRLException e) {
-            throw new AisClientException("Failed to map the received encoded CRL entry", e);
+            throw new AisClientException(String.format("Failed to map the received encoded CRL entry - %s", trace.getId()), e);
         }
     }
 
@@ -267,31 +246,45 @@ public class PdfDocumentHandler implements Closeable {
             logOcspInfo(ocspResp, basicResp);
             return basicResp.getEncoded();
         } catch (IOException | OCSPException e) {
-            throw new AisClientException("Failed to map the received encoded OCSP entry", e);
+            throw new AisClientException(String.format("Failed to map the received encoded OCSP entry - %s", trace.getId()), e);
         }
     }
 
     private void logCrlInfo(X509CRL x509crl) {
         int revokedCertificatesNo = Objects.isNull(x509crl.getRevokedCertificates()) ? 0 : x509crl.getRevokedCertificates().size();
-        processingLogger.debug("Embedding CRL response...");
-        processingLogger.debug("IssuerDN: {}", x509crl.getIssuerDN());
-        processingLogger.debug("This update: {}", x509crl.getThisUpdate());
-        processingLogger.debug("Next update: {}", x509crl.getNextUpdate());
-        processingLogger.debug("No. of revoked certificates: {}", revokedCertificatesNo);
+
+        String message = "Embedding CRL response... ["
+                         + "IssuerDN: " + x509crl.getIssuerDN() + DELIMITER
+                         + "This update: " + x509crl.getThisUpdate() + DELIMITER
+                         + "Next update: " + x509crl.getNextUpdate() + DELIMITER
+                         + "No. of revoked certificates: " + revokedCertificatesNo
+                         + "] - " + trace.getId();
+        processingLogger.debug(message);
     }
 
     private void logOcspInfo(OCSPResp ocspResp, BasicOCSPResp basicResp) {
         SingleResp response = basicResp.getResponses()[0];
+        BigInteger serialNumber = response.getCertID().getSerialNumber();
+        X509CertificateHolder firstCertificate = basicResp.getCerts()[0];
 
-        processingLogger.debug("Embedding OCSP response...");
-        processingLogger.debug("Status: {}", ocspResp.getStatus() == 0 ? "OK" : "NOK");
-        processingLogger.debug("Produced at: {}", basicResp.getProducedAt());
-        processingLogger.debug("This Update: {}", response.getThisUpdate());
-        processingLogger.debug("Next Update: {}", response.getNextUpdate());
-        processingLogger.debug("X509 Cert Issuer: {}", basicResp.getCerts()[0].getIssuer());
-        processingLogger.debug("X509 Cert Subject: {}", basicResp.getCerts()[0].getSubject());
-        processingLogger.debug("Certificate ID: {} ({})", response.getCertID().getSerialNumber().toString(),
-                               response.getCertID().getSerialNumber().toString(16).toUpperCase());
+        String message = "Embedding OCSP response... ["
+                         + "Status: " + (ocspResp.getStatus() == 0 ? "OK" : "NOK") + DELIMITER
+                         + "Produced at: " + basicResp.getProducedAt() + DELIMITER
+                         + "This update: " + response.getThisUpdate() + DELIMITER
+                         + "Next update: " + response.getNextUpdate() + DELIMITER
+                         + "X509 cert issuer: " + firstCertificate.getIssuer() + DELIMITER
+                         + "X509 cert subject: " + firstCertificate.getSubject() + DELIMITER
+                         + "Certificate ID: " + serialNumber.toString() + "(" + serialNumber.toString(16).toUpperCase() + ")"
+                         + "] - " + trace.getId();
+        processingLogger.debug(message);
+    }
+
+    private void logTempFileInfo(boolean isTempFileDeleted) {
+        if (isTempFileDeleted) {
+            processingLogger.debug("Temp file deleted - {}", trace.getId());
+        } else {
+            processingLogger.warn("Could not delete the temp file - {}", trace.getId());
+        }
     }
 
     @Override
@@ -300,6 +293,8 @@ public class PdfDocumentHandler implements Closeable {
         closeResource(pdfWriter);
         closeResource(pdfDocument);
         closeResource(inMemoryStream);
+        boolean isTempFileDeleted = outputTempFile.delete();
+        logTempFileInfo(isTempFileDeleted);
     }
 
     private void closeResource(Closeable resource) {
@@ -308,7 +303,7 @@ public class PdfDocumentHandler implements Closeable {
                 resource.close();
             }
         } catch (IOException e) {
-            processingLogger.debug("Failed to close the resource. Reason: {}", e.getMessage());
+            processingLogger.debug("Failed to close the resource - {}. Reason: {}", trace.getId(), e.getMessage());
         }
     }
 }
