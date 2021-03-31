@@ -2,7 +2,6 @@ package com.swisscom.ais.itext.client;
 
 import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.model.PdfMetadata;
-import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.SignatureResult;
 import com.swisscom.ais.itext.client.model.UserData;
 
