@@ -708,11 +708,11 @@ public class Soap {
         int counter = 0;
         for (String signatureHash : signHashes) {
 
-            pdfs[counter].createSignedPdf(Base64.decode(signatureHash), estimatedSize);
+            pdfs[counter].createSignedPdf(Base64.decode(signatureHash), estimatedSize, new ArrayList<>(), new ArrayList<>());
 
             // if (timestampOnly) - Removed since we need to add the TS RI for CMS signatures as well
-            pdfs[counter].addValidationInformation(ocsp, crl);
-            ;
+//            pdfs[counter].addValidationInformation(ocsp, crl);
+//            ;
 
             counter++;
         }

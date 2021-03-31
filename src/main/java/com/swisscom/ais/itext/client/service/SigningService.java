@@ -71,6 +71,8 @@ public class SigningService {
     }
 
     public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) throws Exception {
+        clientLogger.info("Start performing the signings for the input file(s): {}. You can trace the corresponding details using the {} trace id.",
+                          pdfsMetadata.stream().map(PdfMetadata::getInputFilePath).collect(Collectors.joining(", ")), userData.getTransactionId());
         try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient)) {
             SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
             logResultInfo(signatureResult);
@@ -107,7 +109,8 @@ public class SigningService {
             case ON_DEMAND_WITH_STEP_UP:
                 return client.signWithOnDemandCertificateAndStepUp(pdfsMetadata, userData);
             default:
-                throw new IllegalArgumentException(String.format("Invalid type. Can not sign the document(s) with the %s signature.", signatureMode));
+                throw new IllegalArgumentException(String.format("Invalid signature mode. Can not sign the document(s) with the %s signature. - %s",
+                                                                 signatureMode, userData.getTransactionId()));
         }
     }
 

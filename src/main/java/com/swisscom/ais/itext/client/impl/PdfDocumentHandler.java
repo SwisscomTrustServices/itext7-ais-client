@@ -53,7 +53,6 @@ public class PdfDocumentHandler implements Closeable {
     private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
     private PdfDocument pdfDocument;
-    private File outputTempFile;
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
@@ -66,9 +65,9 @@ public class PdfDocumentHandler implements Closeable {
     /**
      * Add signature information (reason for signing, location, contact, date) and create the pdf document hash
      *
-     * @param algorithm     the hash algorithm which will be used to sign the pdf
-     * @param signatureType the signature type
-     * @param userData      the data used to fill the signature attributes
+     * @param algorithm     hash algorithm which will be used to sign the pdf
+     * @param signatureType signature type
+     * @param userData      data used to fill the signature attributes
      */
     public void prepareForSigning(DigestAlgorithm algorithm, SignatureType signatureType, UserData userData)
         throws IOException, GeneralSecurityException {
@@ -119,20 +118,23 @@ public class PdfDocumentHandler implements Closeable {
     }
 
     /**
-     * Add a signature to pdf document
+     * Embed the signature into the PDF document and add external revocation information to DSS Dictionary for enabling the Long Term Validation
+     * (LTV) in Adobe Reader.
      *
-     * @param externalSignature The extern generated signature
-     * @param estimatedSize     Size of external signature
+     * @param externalSignature  external generated signature
+     * @param estimatedSize      estimated size of external signature
+     * @param encodedCrlEntries  encoded base64 list of CRLs
+     * @param encodedOcspEntries encoded base64 list of OCSPs
      */
-    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize) {
+    public void createSignedPdf(@Nonnull byte[] externalSignature, int estimatedSize, List<String> encodedCrlEntries,
+                                List<String> encodedOcspEntries) {
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
             throw new AisClientException(String.format("Could not apply signature because source file contains a certification that does not allow "
                                                        + "any changes to the document with id %s", trace.getId()));
         }
 
-        processingLogger.debug("Estimated signature size: {}", estimatedSize);
-        processingLogger.debug("Actual signature size: {}", externalSignature.length);
-        processingLogger.debug("Remaining size: {}", estimatedSize - externalSignature.length);
+        String message = "Signature size [estimated: {}" + DELIMITER + "actual: {}" + DELIMITER + "remaining: {}" + "] - {}";
+        processingLogger.debug(message, estimatedSize, externalSignature.length, estimatedSize - externalSignature.length, trace.getId());
 
         if (estimatedSize < externalSignature.length) {
             throw new AisClientException(String.format("Not enough space for signature in the document with id %s. The estimated size needs to be " +
@@ -140,33 +142,25 @@ public class PdfDocumentHandler implements Closeable {
         }
 
         try {
-            outputTempFile = File.createTempFile("signed", "-temp.pdf");
-            OutputStream outputStream = new FileOutputStream(outputTempFile);
+            OutputStream outputStream = new FileOutputStream(outputFilePath);
             pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
-            inMemoryStream.writeTo(outputStream);
-
-            processingLogger.debug("Writing signature to the temp output file {} - {}", outputTempFile.getPath(), trace.getId());
+            if (AisObjectUtils.anyNotNull(encodedCrlEntries, encodedOcspEntries)) {
+                extendDocumentWithCrlOcspMetadata(new ByteArrayInputStream(inMemoryStream.toByteArray()), encodedCrlEntries, encodedOcspEntries);
+            } else {
+                processingLogger.info("No CRL and OCSP entries were received to be embedded into the PDF - {}", trace.getId());
+                outputStream.write(inMemoryStream.toByteArray());
+            }
 
             closeResource(pdfDocument);
             closeResource(inMemoryStream);
             closeResource(outputStream);
         } catch (IOException | GeneralSecurityException e) {
-            throw new AisClientException(String.format("Failed to embed the signature in the document - %s", trace.getId()));
+            throw new AisClientException(String.format("Failed to embed the signature in the document - %s", trace.getId()), e);
         }
     }
 
-    /**
-     * Add external revocation information to DSS Dictionary, to enable Long Term Validation (LTV) in Adobe Reader
-     *
-     * @param encodedCrlEntries  List of CRL response in base64 encoding
-     * @param encodedOcspEntries List of OCSP response in base64 encoding
-     */
-    // todo maybe try to embed the revocation info in the previous step
-    public void addValidationInformation(List<String> encodedCrlEntries, List<String> encodedOcspEntries) {
-        if (AisObjectUtils.allNull(encodedCrlEntries, encodedOcspEntries)) {
-            return;
-        }
+    private void extendDocumentWithCrlOcspMetadata(InputStream documentStream, List<String> encodedCrlEntries, List<String> encodedOcspEntries) {
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
             throw new AisClientException(String.format("Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a " +
                                                        "certification that does not allow any changes - %s", trace.getId()));
@@ -175,7 +169,7 @@ public class PdfDocumentHandler implements Closeable {
         List<byte[]> crl = mapEncodedEntries(encodedCrlEntries, this::mapEncodedCrl);
         List<byte[]> ocsp = mapEncodedEntries(encodedOcspEntries, this::mapEncodedOcsp);
 
-        try (PdfReader reader = new PdfReader(outputTempFile);
+        try (PdfReader reader = new PdfReader(documentStream);
              PdfWriter writer = new PdfWriter(outputFilePath);
              PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode())) {
             LtvVerification validation = new LtvVerification(pdfDocument);
@@ -279,22 +273,12 @@ public class PdfDocumentHandler implements Closeable {
         processingLogger.debug(message);
     }
 
-    private void logTempFileInfo(boolean isTempFileDeleted) {
-        if (isTempFileDeleted) {
-            processingLogger.debug("Temp file deleted - {}", trace.getId());
-        } else {
-            processingLogger.warn("Could not delete the temp file - {}", trace.getId());
-        }
-    }
-
     @Override
     public void close() {
         closeResource(pdfReader);
         closeResource(pdfWriter);
         closeResource(pdfDocument);
         closeResource(inMemoryStream);
-        boolean isTempFileDeleted = outputTempFile.delete();
-        logTempFileInfo(isTempFileDeleted);
     }
 
     private void closeResource(Closeable resource) {

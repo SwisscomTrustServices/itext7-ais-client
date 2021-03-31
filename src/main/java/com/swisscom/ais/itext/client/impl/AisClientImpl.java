@@ -12,7 +12,6 @@ import com.swisscom.ais.itext.client.model.SignatureType;
 import com.swisscom.ais.itext.client.model.Trace;
 import com.swisscom.ais.itext.client.model.UserData;
 import com.swisscom.ais.itext.client.rest.SignatureRestClient;
-import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.model.AdditionalProfile;
 import com.swisscom.ais.itext.client.rest.model.ResultMajorCode;
 import com.swisscom.ais.itext.client.rest.model.ResultMessageCode;
@@ -43,12 +42,6 @@ public class AisClientImpl implements AisClient {
     private final AisRequestService requestService;
     private final AisClientConfiguration configuration;
     private final SignatureRestClient restClient;
-
-    public AisClientImpl() {
-        this.requestService = new AisRequestService();
-        this.configuration = new AisClientConfiguration();
-        this.restClient = new SignatureRestClientImpl();
-    }
 
     public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration, SignatureRestClient restClient) {
         this.requestService = requestService;
@@ -136,8 +129,8 @@ public class AisClientImpl implements AisClient {
             newDocument.prepareForSigning(documentMetadata.getDigestAlgorithm(), signatureType, userData);
             return newDocument;
         } catch (Exception e) {
-            throw new AisClientException(String.format("Failed to prepare the document [%s] for %s signing.",
-                                                       documentMetadata.getInputFilePath(), signatureMode.getValue()), e);
+            throw new AisClientException(String.format("Failed to prepare the document [%s] for %s signing - %s",
+                                                       documentMetadata.getInputFilePath(), signatureMode.getValue(), trace.getId()), e);
         }
     }
 
@@ -255,8 +248,7 @@ public class AisClientImpl implements AisClient {
         documents.forEach(document -> {
             clientLogger.info("Finalizing the signature for document: {} - {}", document.getOutputFilePath(), trace.getId());
             String encodedSignature = extractEncodedSignature(response, containsSingleDocument, signatureMode, document);
-            document.createSignedPdf(Base64.getDecoder().decode(encodedSignature), signatureEstimatedSize);
-            document.addValidationInformation(encodedCrlEntries, encodedOcspEntries);
+            document.createSignedPdf(Base64.getDecoder().decode(encodedSignature), signatureEstimatedSize, encodedCrlEntries, encodedOcspEntries);
         });
     }
 

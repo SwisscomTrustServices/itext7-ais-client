@@ -36,7 +36,7 @@ public class PdfDocumentSigner extends PdfSigner {
         signatureDictionary.setLocation(appearance.getLocation());
         signatureDictionary.setSignatureCreator(appearance.getSignatureCreator());
         signatureDictionary.setContact(appearance.getContact());
-        signatureDictionary.setDate(new PdfDate(getSignDate())); // time-stamp will over-rule this
+        signatureDictionary.setDate(new PdfDate(getSignDate()));
         externalHashContainer.modifySigningDictionary(signatureDictionary.getPdfObject());
         cryptoDictionary = signatureDictionary;
 
@@ -57,10 +57,7 @@ public class PdfDocumentSigner extends PdfSigner {
             throw new IOException("Not enough space");
         }
 
-//        PdfLiteral pdfLiteral = (PdfLiteral) signatureDictionary.getPdfObject().get(PdfName.Contents);
-//        byte[] paddedSignature = new byte[(pdfLiteral.getBytesCount() - 2) / 2];
         byte[] paddedSignature = new byte[estimatedSize];
-
         System.arraycopy(authorizedSignature, 0, paddedSignature, 0, authorizedSignature.length);
 
         PdfDictionary dic2 = new PdfDictionary();
