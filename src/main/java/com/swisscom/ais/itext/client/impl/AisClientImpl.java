@@ -43,6 +43,7 @@ public class AisClientImpl implements AisClient {
 
     private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
     private static final Logger protocolLogger = LoggerFactory.getLogger(Loggers.CLIENT_PROTOCOL);
+    private static final String MISSING_MSISDN_MESSAGE = "<MSISDN> is missing";
 
     private final AisRequestService requestService;
     private final AisClientConfiguration configuration;
@@ -181,6 +182,7 @@ public class AisClientImpl implements AisClient {
             case PENDING: {
                 return SignatureResult.USER_TIMEOUT;
             }
+            case REQUESTER_ERROR: // falls through
             case SUBSYSTEM_ERROR: {
                 Optional<SignatureResult> signatureResult = extractSignatureResultFromMinorCode(minorCode, responseResult);
                 if (signatureResult.isPresent()) {
@@ -205,6 +207,14 @@ public class AisClientImpl implements AisClient {
                 return Optional.of(SignatureResult.USER_TIMEOUT);
             case STEPUP_CANCEL:
                 return Optional.of(SignatureResult.USER_CANCEL);
+            case INSUFFICIENT_DATA:
+                if (responseResult.getResultMessage().get$().contains(MISSING_MSISDN_MESSAGE)) {
+                    clientLogger.error("The required MSISDN parameter was missing in the request. This can happen sometimes in the context of the"
+                                       + " on-demand flow, depending on the user's server configuration. As an alternative, the on-demand with"
+                                       + " step-up flow can be used instead.");
+                    return Optional.of(SignatureResult.INSUFFICIENT_DATA_WITH_ABSENT_MSISDN);
+                }
+                break;
             case SERVICE_ERROR:
                 if (Objects.nonNull(responseResult.getResultMessage())) {
                     ResultMessageCode messageCode = ResultMessageCode.getByUri(responseResult.getResultMessage().get$());

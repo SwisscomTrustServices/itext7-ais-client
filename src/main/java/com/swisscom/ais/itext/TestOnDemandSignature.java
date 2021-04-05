@@ -36,5 +36,6 @@ public class TestOnDemandSignature {
             .build();
         SignatureResult signatureResult = signingService.performSignings(context, userData);
         System.out.println("Finish to sign the document(s) with the status: " + signatureResult);
+        signingService.close();
     }
 }

@@ -40,5 +40,6 @@ public class TestAllConfigurableSecond {
 
         SignatureResult result = signingService.performSignings(Collections.singletonList(document), SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
         System.out.println("Finish to sign the document(s) with the status: " + result);
+        signingService.close();
     }
 }

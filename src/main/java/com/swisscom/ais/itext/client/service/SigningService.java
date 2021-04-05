@@ -20,6 +20,7 @@ import com.swisscom.ais.itext.client.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
  * Aim to build an {@link AisClient}, thus hiding the implementation details and providing a more abstract way to sign documents. However, the
  * {@link AisClient} can be directly used, but is not recommended.
  */
-public class SigningService {
+public class SigningService implements Closeable {
 
     public static final String SEPARATOR = "--------------------------------------------------------------------------------";
     private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
@@ -40,10 +41,8 @@ public class SigningService {
     private static final String TIME_PLACEHOLDER = "#time";
 
     private final AisRequestService requestService;
-
     private ClientVersionProvider versionProvider;
-    private AisClientConfiguration aisConfig;
-    private SignatureRestClient restClient;
+    private AisClient client;
 
     public SigningService(AisRequestService requestService) {
         this.requestService = requestService;
@@ -59,14 +58,14 @@ public class SigningService {
     }
 
     public void initialize(Properties properties) {
-        aisConfig = new AisClientConfiguration().fromProperties(properties);
+        AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(properties);
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
-        restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
+        SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
+        initialize(aisConfig, restClient);
     }
 
     public void initialize(AisClientConfiguration builtAisConfig, SignatureRestClient builtRestClient) {
-        aisConfig = builtAisConfig;
-        restClient = builtRestClient;
+        client = new AisClientImpl(requestService, builtAisConfig, builtRestClient);
     }
 
     /**
@@ -98,12 +97,15 @@ public class SigningService {
     public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) {
         clientLogger.info("Start performing the signings for the input file(s): {}. You can trace the corresponding details using the {} trace id.",
                           pdfsMetadata.stream().map(PdfMetadata::getInputFilePath).collect(Collectors.joining(", ")), userData.getTransactionId());
-        try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient)) {
-            SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
-            logResultInfo(signatureResult);
-            return signatureResult;
-        } catch (IOException e) {
-            throw new AisClientException(String.format("Could not close the AIS client resource: %s.", e.getMessage()));
+        SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
+        logResultInfo(signatureResult);
+        return signatureResult;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (Objects.nonNull(client)) {
+            client.close();
         }
     }
 
