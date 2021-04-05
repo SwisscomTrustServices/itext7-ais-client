@@ -9,7 +9,7 @@ import java.io.Closeable;
 import java.util.List;
 
 /**
- * Sign multiple PDF documents using the following signature modes:
+ * Defines the contract to sign multiple PDF documents using the following signature modes:
  * <ul>
  *     <li>static</li>
  *     <li>on demand</li>

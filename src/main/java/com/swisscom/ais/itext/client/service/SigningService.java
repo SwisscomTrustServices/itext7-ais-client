@@ -1,6 +1,8 @@
 package com.swisscom.ais.itext.client.service;
 
+import com.itextpdf.licensekey.LicenseKeyException;
 import com.swisscom.ais.itext.client.AisClient;
+import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.common.Loggers;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.impl.AisClientImpl;
@@ -18,6 +20,7 @@ import com.swisscom.ais.itext.client.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,6 +28,10 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+/**
+ * Aim to build an {@link AisClient}, thus hiding the implementation details and providing a more abstract way to sign documents. However, the
+ * {@link AisClient} can be directly used, but is not recommended.
+ */
 public class SigningService {
 
     public static final String SEPARATOR = "--------------------------------------------------------------------------------";
@@ -62,7 +69,16 @@ public class SigningService {
         restClient = builtRestClient;
     }
 
-    public SignatureResult performSignings(ArgumentsContext context, UserData userData) throws Exception {
+    /**
+     * @param context  the {@linkplain ArgumentsContext arguments context} which will be considered to retrieve the input documents and the signature
+     *                 mode
+     * @param userData the {@linkplain UserData user specific metadata} for signing
+     * @return the {@linkplain SignatureResult signature result}
+     * @throws IllegalArgumentException if the documents can not be signed with the provided signature mode
+     * @throws LicenseKeyException      if the iText license was not loaded previously
+     * @throws AisClientException       if the signature acquisition process from the AIS service fails
+     */
+    public SignatureResult performSignings(ArgumentsContext context, UserData userData) {
         List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
             .map(inputFilePath -> new PdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
             .collect(Collectors.toList());
@@ -70,13 +86,24 @@ public class SigningService {
         return performSignings(pdfsMetadata, context.getSignature(), userData);
     }
 
-    public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) throws Exception {
+    /**
+     * @param pdfsMetadata  the documents metadata to be signed
+     * @param signatureMode the {@linkplain SignatureMode signature mode} to be used to sign the PDFs
+     * @param userData      the {@linkplain UserData user specific metadata} for signing
+     * @return the {@linkplain SignatureResult signature result}
+     * @throws IllegalArgumentException if the documents can not be signed with the provided signature mode
+     * @throws LicenseKeyException      if the iText license was not loaded previously
+     * @throws AisClientException       if the signature acquisition process from the AIS service fails
+     */
+    public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) {
         clientLogger.info("Start performing the signings for the input file(s): {}. You can trace the corresponding details using the {} trace id.",
                           pdfsMetadata.stream().map(PdfMetadata::getInputFilePath).collect(Collectors.joining(", ")), userData.getTransactionId());
         try (AisClient client = new AisClientImpl(requestService, aisConfig, restClient)) {
             SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
             logResultInfo(signatureResult);
             return signatureResult;
+        } catch (IOException e) {
+            throw new AisClientException(String.format("Could not close the AIS client resource: %s.", e.getMessage()));
         }
     }
 

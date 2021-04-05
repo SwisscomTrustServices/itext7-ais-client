@@ -38,6 +38,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+/**
+ * Able to handles two basic and important PDf document operations: preparing the document for signing by computing a hash based on the document
+ * content and to sign the document by embedding into the document the authorized signature together with CRL and OCSP information.
+ * <p>
+ * High level workflow: compute the hash from the document, call the Swisscom authorized server in order to retrieve the corresponding trust
+ * signature and finally sign the document.
+ */
 public class PdfDocumentHandler implements Closeable {
 
     private static final Logger processingLogger = LoggerFactory.getLogger(Loggers.PDF_PROCESSING);
@@ -74,11 +81,11 @@ public class PdfDocumentHandler implements Closeable {
 
         digestAlgorithm = algorithm;
         id = IdGenerator.generateDocumentId();
-        pdfDocument = new PdfDocument(createPdfReader());
+        pdfDocument = new PdfDocument(new PdfReader(inputFilePath, new ReaderProperties()));
         SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
         boolean hasSignature = signatureUtil.getSignatureNames().size() > 0;
 
-        pdfReader = createPdfReader();
+        pdfReader = new PdfReader(inputFilePath, new ReaderProperties());
         inMemoryStream = new ByteArrayOutputStream();
         pdfWriter = new PdfWriter(inMemoryStream, new WriterProperties().addXmpMetadata().setPdfVersion(PdfVersion.PDF_1_0));
         StampingProperties stampingProperties = new StampingProperties();
@@ -111,10 +118,6 @@ public class PdfDocumentHandler implements Closeable {
 
     private String getOptionalAttribute(String attribute) {
         return Objects.nonNull(attribute) ? attribute : StringUtils.EMPTY;
-    }
-
-    private PdfReader createPdfReader() throws IOException {
-        return new PdfReader(inputFilePath, new ReaderProperties());
     }
 
     /**

@@ -56,7 +56,7 @@ public abstract class PropertiesLoader<T> {
         return Integer.parseInt(extractProperty(provider, propertyName));
     }
 
-    public String extractPasswordProperty(ConfigurationProvider provider, String propertyName) {
+    public String extractSecretProperty(ConfigurationProvider provider, String propertyName) {
         String property = extractProperty(provider, propertyName);
         return shouldExtractFromEnvVariable(property) ? System.getenv(extractEnvPropertyName(property)) : property;
     }

@@ -92,7 +92,7 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
             .withServiceSignUrl(extractStringProperty(provider, "server.rest.signUrl"))
             .withServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl"))
             .withClientKeyFile(extractStringProperty(provider, "client.auth.keyFile"))
-            .withClientKeyPassword(extractPasswordProperty(provider, "client.auth.keyPassword"))
+            .withClientKeyPassword(extractSecretProperty(provider, "client.auth.keyPassword"))
             .withClientCertificateFile(extractStringProperty(provider, "client.cert.file"))
             .withServerCertificateFile(extractStringProperty(provider, "server.cert.file"))
             .withMaxTotalConnections(extractIntProperty(provider, "client.http.maxTotalConnections"))

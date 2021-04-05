@@ -6,18 +6,15 @@ import java.util.Objects;
 
 public class ArgumentsContext {
 
-    private List<String> inputFiles;
-    private String outputFile;
-    private String suffix;
-    private String configFile;
-    private SignatureMode signature;
-    private VerboseLevel verboseLevel;
+    private final List<String> inputFiles;
+    private final String outputFile;
+    private final String suffix;
+    private final String configFile;
+    private final SignatureMode signature;
+    private final VerboseLevel verboseLevel;
 
-    private ArgumentsContext() {
-    }
-
-    public ArgumentsContext(List<String> inputFiles, String outputFile, String suffix, String configFile,
-                            SignatureMode signature, VerboseLevel verboseLevel) {
+    public ArgumentsContext(List<String> inputFiles, String outputFile, String suffix, String configFile, SignatureMode signature,
+                            VerboseLevel verboseLevel) {
         this.inputFiles = inputFiles;
         this.outputFile = outputFile;
         this.suffix = suffix;

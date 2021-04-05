@@ -1,5 +1,7 @@
 package com.swisscom.ais.itext.client.impl;
 
+import com.itextpdf.licensekey.LicenseKey;
+import com.itextpdf.licensekey.LicenseKeyException;
 import com.swisscom.ais.itext.client.AisClient;
 import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.common.Loggers;
@@ -34,6 +36,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * Provides implementation for different PDF signature types, as described in the {@link AisClient} contract.
+ */
 public class AisClientImpl implements AisClient {
 
     private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
@@ -47,6 +52,19 @@ public class AisClientImpl implements AisClient {
         this.requestService = requestService;
         this.configuration = configuration;
         this.restClient = restClient;
+        initialize();
+    }
+
+    private void initialize() {
+        try {
+            LicenseKey.loadLicenseFile(configuration.getLicenseFilePath());
+            String[] licenseeInfo = LicenseKey.getLicenseeInfo();
+            clientLogger.info("Successfully load the {} iText license granted for company {}, with name {}, email {}, having version {} and "
+                              + "producer line {}. Is license expired: {}.", licenseeInfo[8], licenseeInfo[2], licenseeInfo[0], licenseeInfo[1],
+                              licenseeInfo[6], licenseeInfo[4], licenseeInfo[7]);
+        } catch (LicenseKeyException e) {
+            clientLogger.error("Failed to load the iText license: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -76,6 +94,7 @@ public class AisClientImpl implements AisClient {
     private SignatureResult performSigning(SignatureMode signatureMode, SignatureType signatureType, List<PdfMetadata> documentsMetadata,
                                            UserData userData, List<AdditionalProfile> profiles, boolean signWithStepUp,
                                            boolean signWithCertificateRequest) {
+        LicenseKey.scheduledCheck(null);
         Trace trace = new Trace(userData.getTransactionId());
         userData.validatePropertiesForSignature(signatureMode, trace);
         documentsMetadata.forEach(docMetadata -> docMetadata.validate(trace));

@@ -8,19 +8,22 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
 
     private static final String INTERVAL_IN_SECONDS_POLL_PROPERTY = "client.poll.intervalInSeconds";
     private static final String ROUNDS_POLL_PROPERTY = "client.poll.rounds";
+    private static final String LICENSE_FILE_PROPERTY = "license.file";
     private static final int DEFAULT_SIGNATURE_POLLING_INTERVAL_IN_SECONDS = 10;
     private static final int DEFAULT_SIGNATURE_POLLING_ROUNDS = 10;
 
     private int signaturePollingIntervalInSeconds = DEFAULT_SIGNATURE_POLLING_INTERVAL_IN_SECONDS;
     private int signaturePollingRounds = DEFAULT_SIGNATURE_POLLING_ROUNDS;
+    private String licenseFilePath;
 
     public AisClientConfiguration() {
         super();
     }
 
-    public AisClientConfiguration(int signaturePollingIntervalInSeconds, int signaturePollingRounds) {
+    public AisClientConfiguration(int signaturePollingIntervalInSeconds, int signaturePollingRounds, String licenseFilePath) {
         this.signaturePollingIntervalInSeconds = signaturePollingIntervalInSeconds;
         this.signaturePollingRounds = signaturePollingRounds;
+        this.licenseFilePath = licenseFilePath;
     }
 
     public int getSignaturePollingIntervalInSeconds() {
@@ -43,10 +46,20 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
         this.signaturePollingRounds = signaturePollingRounds;
     }
 
+    public String getLicenseFilePath() {
+        return licenseFilePath;
+    }
+
+    public void setLicenseFilePath(String licenseFilePath) {
+        ValidationUtils.notBlank(licenseFilePath, "The iText license file path can not be blank.");
+        this.licenseFilePath = licenseFilePath;
+    }
+
     @Override
     protected AisClientConfiguration fromConfigurationProvider(ConfigurationProvider provider) {
         setSignaturePollingIntervalInSeconds(extractIntProperty(provider, INTERVAL_IN_SECONDS_POLL_PROPERTY));
         setSignaturePollingRounds(extractIntProperty(provider, ROUNDS_POLL_PROPERTY));
+        setLicenseFilePath(extractSecretProperty(provider, LICENSE_FILE_PROPERTY));
         return this;
     }
 }

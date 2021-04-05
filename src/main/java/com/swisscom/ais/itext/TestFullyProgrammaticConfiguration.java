@@ -25,7 +25,7 @@ public class TestFullyProgrammaticConfiguration {
         // configuration for the REST client; this is done once per application lifetime
         RestClientConfiguration restConfig = RestClientConfiguration.builder()
             .withServiceSignUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/sign")
-            .withServicePendingUrl("https://ais.s.wisscom.com/AIS-Server/rs/v1.0/pending")
+            .withServicePendingUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/pending")
             .withServerCertificateFile("/home/user/ais-server.crt")
             .withClientKeyFile("/home/user/ais-client.key")
             .withClientKeyPassword("secret")
@@ -35,7 +35,7 @@ public class TestFullyProgrammaticConfiguration {
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
         // then configure the AIS client; this is done once per application lifetime
-        AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10);
+        AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
         try (AisClientImpl aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
             // third, configure a UserData instance with details about this signature
