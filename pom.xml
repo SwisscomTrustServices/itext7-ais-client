@@ -183,7 +183,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.swisscom.ais.itext.client.SignPdfCli</mainClass>
+                            <mainClass>com.swisscom.ais.itext.client.cli.Cli</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -202,7 +202,7 @@
                             <assembleDirectory>${project.build.directory}/release/${project.artifactId}-${project.version}</assembleDirectory>
                             <programs>
                                 <program>
-                                    <mainClass>com.swisscom.ais.itext.client.SignPdfCli</mainClass>
+                                    <mainClass>com.swisscom.ais.itext.client.cli.Cli</mainClass>
                                     <id>itext-client</id>
                                 </program>
                             </programs>

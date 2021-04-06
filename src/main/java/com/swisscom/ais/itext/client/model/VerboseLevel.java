@@ -20,7 +20,7 @@ public enum VerboseLevel {
 
     private final int importance;
 
-    private VerboseLevel(int importance) {
+    VerboseLevel(int importance) {
         this.importance = importance;
     }
 

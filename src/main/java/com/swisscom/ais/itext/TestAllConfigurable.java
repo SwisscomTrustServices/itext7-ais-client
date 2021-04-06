@@ -46,7 +46,7 @@ public class TestAllConfigurable {
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
         // load the AIS client config
-        AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(properties);
+        AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(properties).build();
 
         try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
             // third, load even the user data from the properties store

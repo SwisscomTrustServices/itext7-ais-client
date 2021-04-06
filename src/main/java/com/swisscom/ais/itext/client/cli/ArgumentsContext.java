@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext.client.model;
+package com.swisscom.ais.itext.client.cli;
+
+import com.swisscom.ais.itext.client.model.SignatureMode;
+import com.swisscom.ais.itext.client.model.VerboseLevel;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ArgumentsContext {
+class ArgumentsContext {
 
     private final List<String> inputFiles;
     private final String outputFile;
@@ -108,31 +111,37 @@ public class ArgumentsContext {
         Builder() {
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withInputFile(String inputFile) {
             inputFiles.add(inputFile);
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withOutputFile(String outputFile) {
             this.outputFile = outputFile;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withSuffix(String suffix) {
             this.suffix = suffix;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withConfigFile(String configFile) {
             this.configFile = configFile;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withSignature(SignatureMode signature) {
             this.signature = signature;
             return this;
         }
 
+        @SuppressWarnings("UnusedReturnValue")
         public Builder withVerboseLevel(VerboseLevel verboseLevel) {
             if (this.verboseLevel.getImportance() < verboseLevel.getImportance()) {
                 this.verboseLevel = verboseLevel;

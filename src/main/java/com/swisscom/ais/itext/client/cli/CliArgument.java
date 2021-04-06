@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext.client.model;
+package com.swisscom.ais.itext.client.cli;
 
 import java.util.Arrays;
 
-public enum CliArgument {
+enum CliArgument {
     INIT("init"), INPUT("input"), OUTPUT("output"), SUFFIX("suffix"), CONFIG("config"), HELP("help"),
     SIGNATURE_TYPE("type"), BASIC_VERBOSITY("v"), MEDIUM_VERBOSITY("vv"), HIGH_VERBOSITY("vvv");
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext.client.impl;
+package com.swisscom.ais.itext.client.cli;
 
 import com.swisscom.ais.itext.client.common.Loggers;
 
@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.Properties;
 
-public class ClientVersionProvider {
+class ClientVersionProvider {
 
     private static final Logger clientLogger = LoggerFactory.getLogger(Loggers.CLIENT);
 

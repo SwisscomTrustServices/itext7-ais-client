@@ -58,7 +58,7 @@ public enum AdditionalProfile {
     /**
      * Uri of the additional profile.
      */
-    private String uri;
+    private final String uri;
 
     AdditionalProfile(String uri) {
         this.uri = uri;

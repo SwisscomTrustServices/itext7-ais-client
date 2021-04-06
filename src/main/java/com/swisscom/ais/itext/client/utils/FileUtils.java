@@ -23,10 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class FileUtils {
 
     private static final String USAGE_TEXT_FILE_PATH = "/cli/usage.txt";
+    private static final DateTimeFormatter TIME_PATTERN = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    private static final String TIME_PLACEHOLDER = "#time";
 
     public static String readUsageText() {
         try (InputStream inputStream = FileUtils.class.getResourceAsStream(USAGE_TEXT_FILE_PATH);
@@ -45,6 +49,13 @@ public class FileUtils {
         } catch (IOException e) {
             throw new AisClientException(String.format("Failed to create the file: [%s].", outputFile));
         }
+    }
+
+    public static String generateOutputFileName(String inputFile, String suffix) {
+        String finalSuffix = suffix.replaceAll(TIME_PLACEHOLDER, TIME_PATTERN.format(LocalDateTime.now()));
+        int extensionIndex = inputFile.lastIndexOf('.');
+        return extensionIndex > 0 ? inputFile.substring(0, extensionIndex) + finalSuffix + inputFile.substring(extensionIndex)
+                                  : inputFile + finalSuffix;
     }
 
     private static <S extends OutputStream> void writeToOutputStream(InputStream inputStream, S outputStream) throws IOException {

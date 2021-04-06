@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext.client.service;
+package com.swisscom.ais.itext.client.cli;
 
-import com.swisscom.ais.itext.client.impl.ClientVersionProvider;
-import com.swisscom.ais.itext.client.model.ArgumentsContext;
-import com.swisscom.ais.itext.client.model.CliArgument;
 import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.VerboseLevel;
 import com.swisscom.ais.itext.client.utils.AisObjectUtils;
@@ -33,7 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class ArgumentsService {
+class ArgumentsService {
 
     public static final String DEFAULT_SUFFIX = "-signed-#time";
     private static final String ARG_PREFIX_1 = "-";

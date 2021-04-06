@@ -40,6 +40,7 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
     private int responseTimeoutInSec;
 
     public RestClientConfiguration() {
+        super();
     }
 
     public RestClientConfiguration(String serviceSignUrl, String servicePendingUrl, String clientKeyFile, String clientKeyPassword,

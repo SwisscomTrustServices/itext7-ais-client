@@ -15,10 +15,16 @@
  */
 package com.swisscom.ais.itext;
 
+import com.swisscom.ais.itext.client.AisClient;
+import com.swisscom.ais.itext.client.config.AisClientConfiguration;
+import com.swisscom.ais.itext.client.impl.AisClientImpl;
 import com.swisscom.ais.itext.client.model.PdfMetadata;
 import com.swisscom.ais.itext.client.model.SignatureMode;
 import com.swisscom.ais.itext.client.model.SignatureResult;
 import com.swisscom.ais.itext.client.model.UserData;
+import com.swisscom.ais.itext.client.rest.SignatureRestClient;
+import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
+import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.service.AisRequestService;
 import com.swisscom.ais.itext.client.service.SigningService;
 
@@ -37,10 +43,14 @@ public class TestAllConfigurableSecond {
         Properties properties = new Properties();
         properties.load(TestOnDemandSignature.class.getResourceAsStream("/local-config.properties"));
 
+        AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(properties).build();
+        RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
+        SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
+
+        AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient);
+
         // build the signing service
-        SigningService signingService = new SigningService(new AisRequestService());
-        // build the AIS config and the rest client under the hood
-        signingService.initialize(properties);
+        SigningService signingService = new SigningService(client);
 
         // prepare the PDF metadata to sign
         String inputFilePath = properties.getProperty("local.test.inputFile");
@@ -55,6 +65,8 @@ public class TestAllConfigurableSecond {
 
         SignatureResult result = signingService.performSignings(Collections.singletonList(document), SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
         System.out.println("Finish to sign the document(s) with the status: " + result);
-        signingService.close();
+
+        // don't forget to close the AIS client resource
+        client.close();
     }
 }
