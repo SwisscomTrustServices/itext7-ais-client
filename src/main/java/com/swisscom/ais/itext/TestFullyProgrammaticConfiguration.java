@@ -1,5 +1,21 @@
+/*
+ * Copyright 2021 Swisscom (Schweiz) AG
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.swisscom.ais.itext;
 
+import com.swisscom.ais.itext.client.AisClient;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.impl.AisClientImpl;
 import com.swisscom.ais.itext.client.model.DigestAlgorithm;
@@ -37,7 +53,7 @@ public class TestFullyProgrammaticConfiguration {
         // then configure the AIS client; this is done once per application lifetime
         AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
-        try (AisClientImpl aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+        try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
             // third, configure a UserData instance with details about this signature
             // this is done for each signature (can also be created once and cached on a per-user basis)
             UserData userData = UserData.builder()
