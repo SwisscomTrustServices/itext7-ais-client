@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a more convenient way to use an {@link AisClient}. However, the {@link AisClient} can be directly used,
@@ -54,8 +53,8 @@ public class SigningService {
      * @throws AisClientException       if the signature acquisition process from the AIS service fails
      */
     public SignatureResult performSignings(List<PdfMetadata> pdfsMetadata, SignatureMode signatureMode, UserData userData) {
-        clientLogger.info("Start performing the signings for the input file(s): {}. You can trace the corresponding details using the {} trace id.",
-                          pdfsMetadata.stream().map(PdfMetadata::getInputFilePath).collect(Collectors.joining(", ")), userData.getTransactionId());
+        clientLogger.info("Start performing the signings for the input file(s). You can trace the corresponding details using the {} trace id.",
+                          userData.getTransactionId());
         SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
         clientLogger.info("Signature(s) final result: {}", signatureResult);
         return signatureResult;

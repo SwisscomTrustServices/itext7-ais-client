@@ -17,41 +17,42 @@ package com.swisscom.ais.itext.client.model;
 
 import com.swisscom.ais.itext.client.utils.ValidationUtils;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class PdfMetadata {
 
-    private String inputFilePath;
-
-    private String outputFilePath;
-
+    private InputStream inputStream;
+    private OutputStream outputStream;
     private DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA512;
 
     public PdfMetadata() {
     }
 
-    public PdfMetadata(String inputFilePath, String outputFilePath) {
-        this.inputFilePath = inputFilePath;
-        this.outputFilePath = outputFilePath;
+    public PdfMetadata(InputStream inputStream, OutputStream outputStream) {
+        this.inputStream = inputStream;
+        this.outputStream = outputStream;
     }
 
-    public PdfMetadata(String inputFilePath, String outputFilePath, DigestAlgorithm digestAlgorithm) {
-        this(inputFilePath, outputFilePath);
+    public PdfMetadata(InputStream inputStream, OutputStream outputStream, DigestAlgorithm digestAlgorithm) {
+        this(inputStream, outputStream);
         this.digestAlgorithm = digestAlgorithm;
     }
 
-    public String getInputFilePath() {
-        return inputFilePath;
+    public InputStream getInputStream() {
+        return inputStream;
     }
 
-    public void setInputFilePath(String inputFilePath) {
-        this.inputFilePath = inputFilePath;
+    public void setInputStream(InputStream inputStream) {
+        this.inputStream = inputStream;
     }
 
-    public String getOutputFilePath() {
-        return outputFilePath;
+    public OutputStream getOutputStream() {
+        return outputStream;
     }
 
-    public void setOutputFilePath(String outputFilePath) {
-        this.outputFilePath = outputFilePath;
+    public void setOutputStream(OutputStream outputStream) {
+        this.outputStream = outputStream;
     }
 
     public DigestAlgorithm getDigestAlgorithm() {
@@ -63,8 +64,8 @@ public class PdfMetadata {
     }
 
     public void validate(Trace trace) {
-        ValidationUtils.notBlank(inputFilePath, "The inputFromFile cannot be null or empty", trace);
-        ValidationUtils.notBlank(outputFilePath, "The outputToFile cannot be null or empty", trace);
+        ValidationUtils.notNull(inputStream, "The document input stream cannot be null", trace);
+        ValidationUtils.notNull(outputStream, "The document output stream cannot be null", trace);
         ValidationUtils.notNull(digestAlgorithm, "The digest algorithm for a PDF handle cannot be NULL", trace);
     }
 }

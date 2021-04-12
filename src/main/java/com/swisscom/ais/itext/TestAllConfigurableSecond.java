@@ -28,6 +28,8 @@ import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.service.AisRequestService;
 import com.swisscom.ais.itext.client.service.SigningService;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -55,7 +57,7 @@ public class TestAllConfigurableSecond {
         // prepare the PDF metadata to sign
         String inputFilePath = properties.getProperty("local.test.inputFile");
         String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
-        PdfMetadata document = new PdfMetadata(inputFilePath, outputFilePath);
+        PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
 
         // load even the user data from the properties store
         UserData userData = new UserData()

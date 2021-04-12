@@ -26,6 +26,8 @@ import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.service.AisRequestService;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -56,9 +58,9 @@ public class TestAllConfigurable {
                 .build();
 
             // finally, use the properties store even for local testing data
-            PdfMetadata document = new PdfMetadata();
-            document.setInputFilePath(properties.getProperty("local.test.inputFile"));
-            document.setOutputFilePath(properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf");
+            String inputFilePath = properties.getProperty("local.test.inputFile");
+            String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
+            PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
 
             SignatureResult result = aisClient.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
             System.out.println("Finish to sign the document(s) with the status: " + result);

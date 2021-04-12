@@ -15,6 +15,8 @@ import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.service.AisRequestService;
 import com.swisscom.ais.itext.client.service.SigningService;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -31,9 +33,10 @@ public class SignatureTest {
         try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
             SigningService signingService = new SigningService(client);
 
-            String inputFile = configProperties.getProperty("local.test.inputFile");
-            String outputFile = configProperties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
-            List<PdfMetadata> pdfsMetadata = Collections.singletonList(new PdfMetadata(inputFile, outputFile));
+            String inputFilePath = configProperties.getProperty("local.test.inputFile");
+            String outputFilePath = configProperties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
+            PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
+            List<PdfMetadata> pdfsMetadata = Collections.singletonList(document);
             UserData userData = new UserData()
                 .fromProperties(configProperties)
                 .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))

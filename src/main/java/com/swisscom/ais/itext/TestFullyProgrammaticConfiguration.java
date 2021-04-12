@@ -28,6 +28,8 @@ import com.swisscom.ais.itext.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext.client.service.AisRequestService;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -71,7 +73,8 @@ public class TestFullyProgrammaticConfiguration {
                 .build();
 
             // fourth, populate a PdfHandle with details about the document to be signed. More than one PdfHandle can be given
-            PdfMetadata document = new PdfMetadata("/home/user/input.pdf", "/home/user/signed-output.pdf", DigestAlgorithm.SHA256);
+            PdfMetadata document = new PdfMetadata(new FileInputStream("/home/user/input.pdf"),
+                                                   new FileOutputStream("/home/user/signed-output.pdf"), DigestAlgorithm.SHA256);
 
             SignatureResult signatureResult = aisClient.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
             System.out.println("Finish to sign the document(s) with the status: " + signatureResult);

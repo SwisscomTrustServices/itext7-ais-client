@@ -151,6 +151,7 @@ public class AisClientImpl implements AisClient {
 
     private List<PdfDocumentHandler> prepareMultipleDocumentsForSigning(List<PdfMetadata> documentsMetadata, SignatureMode signatureMode,
                                                                         SignatureType signatureType, UserData userData, Trace trace) {
+        clientLogger.info("Preparing document(s) for signing with {} signature... - {}", signatureMode.getValue(), trace.getId());
         return documentsMetadata.stream()
             .map(docMetadata -> prepareOneDocumentForSigning(docMetadata, signatureMode, signatureType, userData, trace))
             .collect(Collectors.toList());
@@ -159,13 +160,12 @@ public class AisClientImpl implements AisClient {
     private PdfDocumentHandler prepareOneDocumentForSigning(PdfMetadata documentMetadata, SignatureMode signatureMode, SignatureType signatureType,
                                                             UserData userData, Trace trace) {
         try {
-            clientLogger.info("Preparing {} document signing: {} - {}", signatureMode.getValue(), documentMetadata.getInputFilePath(), trace.getId());
-            PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputFilePath(), documentMetadata.getOutputFilePath(), trace);
+            PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputStream(), documentMetadata.getOutputStream(), trace);
             newDocument.prepareForSigning(documentMetadata.getDigestAlgorithm(), signatureType, userData);
             return newDocument;
         } catch (Exception e) {
-            throw new AisClientException(String.format("Failed to prepare the document [%s] for %s signing - %s",
-                                                       documentMetadata.getInputFilePath(), signatureMode.getValue(), trace.getId()), e);
+            throw new AisClientException(String.format("Failed to prepare the document for %s signing - %s",
+                                                       signatureMode.getValue(), trace.getId()), e);
         }
     }
 
@@ -289,8 +289,9 @@ public class AisClientImpl implements AisClient {
         List<String> encodedOcspEntries = ResponseUtils.extractScOCSPs(response);
 
         boolean containsSingleDocument = documents.size() == 1;
+        clientLogger.info("Embedding the signature(s) into the document(s)... - {}", trace.getId());
+
         documents.forEach(document -> {
-            clientLogger.info("Finalizing the signature for document: {} - {}", document.getOutputFilePath(), trace.getId());
             String encodedSignature = extractEncodedSignature(response, containsSingleDocument, signatureMode, document);
             document.createSignedPdf(Base64.getDecoder().decode(encodedSignature), signatureEstimatedSize, encodedCrlEntries, encodedOcspEntries);
         });

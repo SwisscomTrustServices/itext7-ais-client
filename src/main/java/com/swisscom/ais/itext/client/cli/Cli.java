@@ -16,6 +16,7 @@
 package com.swisscom.ais.itext.client.cli;
 
 import com.swisscom.ais.itext.client.AisClient;
+import com.swisscom.ais.itext.client.common.AisClientException;
 import com.swisscom.ais.itext.client.common.Loggers;
 import com.swisscom.ais.itext.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext.client.config.LogbackConfiguration;
@@ -36,6 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -107,9 +110,18 @@ public class Cli {
                 .withConsentUrlCallback(consentUrlCallback)
                 .build();
             List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
-                .map(inputFilePath -> new PdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
+                .map(inputFilePath -> buildPdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
                 .collect(Collectors.toList());
             signingService.performSignings(pdfsMetadata, context.getSignature(), userData);
+        }
+    }
+
+    private static PdfMetadata buildPdfMetadata(String inputFilePath, String outputFilePath) {
+        try {
+            return new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
+        } catch (IOException e) {
+            throw new AisClientException(String.format("Could not prepare the IO resources for the PDF. Input file path: %s, output file path: %s.",
+                                                       inputFilePath, outputFilePath));
         }
     }
 

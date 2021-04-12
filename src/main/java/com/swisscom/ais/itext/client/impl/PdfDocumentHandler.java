@@ -15,6 +15,7 @@
  */
 package com.swisscom.ais.itext.client.impl;
 
+import com.itextpdf.io.util.StreamUtil;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.signatures.LtvVerification;
 import com.itextpdf.signatures.PdfSigner;
@@ -40,7 +41,12 @@ import org.bouncycastle.cert.ocsp.SingleResp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.cert.CRLException;
@@ -65,8 +71,8 @@ public class PdfDocumentHandler implements Closeable {
     private static final Logger processingLogger = LoggerFactory.getLogger(Loggers.PDF_PROCESSING);
     private static final String DELIMITER = "; ";
 
-    private final String inputFilePath;
-    private final String outputFilePath;
+    private final InputStream inputStream;
+    private final OutputStream outputStream;
     private final Trace trace;
 
     private String id;
@@ -78,10 +84,9 @@ public class PdfDocumentHandler implements Closeable {
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
-    // todo instead of path to streams
-    PdfDocumentHandler(@Nonnull String inputFilePath, @Nonnull String outputFilePath, @Nonnull Trace trace) {
-        this.inputFilePath = inputFilePath;
-        this.outputFilePath = outputFilePath;
+    PdfDocumentHandler(InputStream inputStream, OutputStream outputStream, Trace trace) {
+        this.inputStream = inputStream;
+        this.outputStream = outputStream;
         this.trace = trace;
     }
 
@@ -97,11 +102,14 @@ public class PdfDocumentHandler implements Closeable {
 
         digestAlgorithm = algorithm;
         id = IdGenerator.generateDocumentId();
-        pdfDocument = new PdfDocument(new PdfReader(inputFilePath, new ReaderProperties()));
+        ByteArrayOutputStream savedStream = new ByteArrayOutputStream();
+        savedStream.write(StreamUtil.inputStreamToArray(inputStream));
+
+        pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(savedStream.toByteArray()), new ReaderProperties()));
         SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
         boolean hasSignature = signatureUtil.getSignatureNames().size() > 0;
 
-        pdfReader = new PdfReader(inputFilePath, new ReaderProperties());
+        pdfReader = new PdfReader(new ByteArrayInputStream(savedStream.toByteArray()), new ReaderProperties());
         inMemoryStream = new ByteArrayOutputStream();
         pdfWriter = new PdfWriter(inMemoryStream, new WriterProperties().addXmpMetadata().setPdfVersion(PdfVersion.PDF_1_0));
         StampingProperties stampingProperties = new StampingProperties();
@@ -130,6 +138,7 @@ public class PdfDocumentHandler implements Closeable {
         PdfHashSignatureContainer hashSignatureContainer = new PdfHashSignatureContainer(algorithm.getDigestAlgorithm(),
                                                                                          new PdfDictionary(signatureDictionary));
         documentHash = pdfSigner.computeHash(hashSignatureContainer, signatureType.getEstimatedSignatureSizeInBytes());
+        closeResource(savedStream);
     }
 
     private String getOptionalAttribute(String attribute) {
@@ -161,7 +170,6 @@ public class PdfDocumentHandler implements Closeable {
         }
 
         try {
-            OutputStream outputStream = new FileOutputStream(outputFilePath);
             pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
             if (AisObjectUtils.anyNotNull(encodedCrlEntries, encodedOcspEntries)) {
@@ -189,7 +197,7 @@ public class PdfDocumentHandler implements Closeable {
         List<byte[]> ocsp = mapEncodedEntries(encodedOcspEntries, this::mapEncodedOcsp);
 
         try (PdfReader reader = new PdfReader(documentStream);
-             PdfWriter writer = new PdfWriter(outputFilePath);
+             PdfWriter writer = new PdfWriter(outputStream);
              PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode())) {
             LtvVerification validation = new LtvVerification(pdfDocument);
 
@@ -202,14 +210,6 @@ public class PdfDocumentHandler implements Closeable {
             throw new AisClientException(String.format("Failed to embed the signature(s) in the document(s) and close the streams - %s",
                                                        trace.getId()));
         }
-    }
-
-    public String getInputFilePath() {
-        return inputFilePath;
-    }
-
-    public String getOutputFilePath() {
-        return outputFilePath;
     }
 
     public String getId() {
@@ -230,9 +230,9 @@ public class PdfDocumentHandler implements Closeable {
 
     private void logSignatureVerificationInfo(boolean isSignatureVerificationAdded) {
         if (isSignatureVerificationAdded) {
-            processingLogger.info("Merged LTV validation information to the output file {} - {}", outputFilePath, trace.getId());
+            processingLogger.info("Merged LTV validation information to the output stream - {}", trace.getId());
         } else {
-            processingLogger.warn("Failed to merge LTV validation information to the output file {} - {}", outputFilePath, trace.getId());
+            processingLogger.warn("Failed to merge LTV validation information to the output stream - {}", trace.getId());
         }
     }
 
@@ -298,6 +298,8 @@ public class PdfDocumentHandler implements Closeable {
         closeResource(pdfWriter);
         closeResource(pdfDocument);
         closeResource(inMemoryStream);
+        closeResource(inputStream);
+        closeResource(outputStream);
     }
 
     private void closeResource(Closeable resource) {
