@@ -6,7 +6,7 @@ Java source code and command line tool to sign PDF with iText.
 ### Usage
 
 ````
-Usage: com.swisscom.ais.itext.SignPDF [OPTIONS]
+Usage: com.swisscom.ais.itext7.SignPDF [OPTIONS]
 
 OPTIONS
 
@@ -66,19 +66,19 @@ OPTIONS
 EXAMPLES
 
   [timestamp]
-    java com.swisscom.ais.itext.SignPDF -type=timestamp -infile=sample.pdf -outfile=signed.pdf
-    java com.swisscom.ais.itext.SignPDF -v -type=timestamp -infile=sample.pdf -outfile=signed.pdf
+    java com.swisscom.ais.itext7.SignPDF -type=timestamp -infile=sample.pdf -outfile=signed.pdf
+    java com.swisscom.ais.itext7.SignPDF -v -type=timestamp -infile=sample.pdf -outfile=signed.pdf
 
   [sign with static certificate]
-    java com.swisscom.ais.itext.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf
-    java com.swisscom.ais.itext.SignPDF -v -config=/tmp/signpdf.properties -type=sign -infile=sample.pdf -outfile=signed.pdf -reason=Approved -location=Berne -contact=alice@acme.com
+    java com.swisscom.ais.itext7.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf
+    java com.swisscom.ais.itext7.SignPDF -v -config=/tmp/signpdf.properties -type=sign -infile=sample.pdf -outfile=signed.pdf -reason=Approved -location=Berne -contact=alice@acme.com
 
   [sign with on demand certificate]
-    java com.swisscom.ais.itext.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH'
+    java com.swisscom.ais.itext7.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH'
 
   [sign with on demand certificate and mobile id authorization]
-    java com.swisscom.ais.itext.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en
-    java com.swisscom.ais.itext.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en -stepUpSerialNumber=MIDCHE2EG8NAWUB3
+    java com.swisscom.ais.itext7.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en
+    java com.swisscom.ais.itext7.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en -stepUpSerialNumber=MIDCHE2EG8NAWUB3
 ````   
 
 #### Dependencies
@@ -119,15 +119,15 @@ Refer to `signpdf.properties` configuration file and modify the configuration pr
 
 You may use the latest Java Archive (JAR) `signpdf-x.y.z.jar` located in the `./jar` subfolder.
 
-Run the JAR (Unix/OSX): `java -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+Run the JAR (Unix/OSX): `java -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
 Run the JAR (Unix/OSX) with custom path to the properties file:
-`java -DpropertyFile.path=<CFG> -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+`java -DpropertyFile.path=<CFG> -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
 Run the JAR (Unix/OSX) with DEBUG enabled:
-`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<JAR>/signpdf.jar:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<JAR>/signpdf.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
-Create the latest JAR: `jar cfe <JAR>/signpdf-x.y.z.jar com.swisscom.ais.itext.SignPDF -C <CLASS> .`
+Create the latest JAR: `jar cfe <JAR>/signpdf-x.y.z.jar com.swisscom.ais.itext7.SignPDF -C <CLASS> .`
 
 If you're on Windows then use a semicolon ; instead of the colon : 
 
@@ -142,13 +142,13 @@ Note: The class files are generated in a directory hierarchy which reflects the 
 The compiled application can be run as follows.
 
 Run the application (Unix/OSX):
-`java -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+`java -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
 Run the application (Unix/OSX) with custom path to the properties file:
-`java -DpropertyFile.path=<CFG> -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+`java -DpropertyFile.path=<CFG> -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
 Run the application (Unix/OSX) with DEBUG enabled:
-`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext.SignPDF`
+`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
 
 If you're on Windows then use a semicolon ; instead of the colon : 
 
@@ -156,7 +156,7 @@ If you're on Windows then use a semicolon ; instead of the colon :
 
 The latest JavaDoc is located in the `./doc` subfolder.
 
-Create the latest JavaDoc: `javadoc -windowtitle "Swisscom All-in Signing Service vx.y.z" -doctitle "<h1>Swisscom All-in Signing Service vx.y.z</h1>" -footer "Swisscom All-in Signing Service vx.y.z" -d <DOC> -private -sourcepath <SRC> com.swisscom.ais.itext`
+Create the latest JavaDoc: `javadoc -windowtitle "Swisscom All-in Signing Service vx.y.z" -doctitle "<h1>Swisscom All-in Signing Service vx.y.z</h1>" -footer "Swisscom All-in Signing Service vx.y.z" -d <DOC> -private -sourcepath <SRC> com.swisscom.ais.itext7`
 
 #### Certificate Handling
 
