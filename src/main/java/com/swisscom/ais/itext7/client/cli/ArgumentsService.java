@@ -20,6 +20,7 @@ import com.swisscom.ais.itext7.client.model.VerboseLevel;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
 import com.swisscom.ais.itext7.client.utils.FileUtils;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.io.File;
@@ -50,6 +51,10 @@ class ArgumentsService {
     }
 
     public Optional<ArgumentsContext> parseArguments(String[] args, String startDirPath) {
+        if (ArrayUtils.isEmpty(args)) {
+            showHelp();
+            return Optional.empty();
+        }
         Iterator<String> argsIterator = Arrays.stream(args).iterator();
         ArgumentsContext.Builder argsContextBuilder = ArgumentsContext.builder();
 

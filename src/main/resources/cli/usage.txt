@@ -14,17 +14,15 @@ Options:
                                                           used only when one single input is given. For more than one input, use suffix.
 
     -suffix [SUFFIX]                                    - Suffix for output file(s), composed using the input file plus the suffix, as alternative to
-                                                          specifying the output file entirely. Default is "signed-#time", where "#time" is replaced
+                                                          specifying the output file entirely. Default is "-signed-#time", where "#time" is replaced
                                                           with current time (yyyyMMdd-hhMMss).
+
+    -type [static|onDemand|onDemand-stepUp|timestamp]   - The type of signature to create
 
     -config [PROPERTIES FILE]                           - The properties file that provides the extra configuration parameters. Use -init to create a
                                                           sample file. If you don't specify a file, by default sign-pdf.properties is used.
 
     -help                                               - This help text
-
-    -type [static|ondemand|ondemand-stepup|timestamp]   - The type of signature to create
-
-    ### DEBUG OPTIONS ###
 
     -v                                                  - Be verbose about what is going on (sets Logback config to info)
 
@@ -33,18 +31,18 @@ Options:
     -vvv                                                - Be EXTRA-EXTRA verbose about what is going on (sets Logback config to debug, with HTTP and TLS traffic)
 
 Use cases:
-    1. > ./bin/ais-client.sh -init   => Have the config files generated for you in the current folder
+    1. > ./bin/itext7-ais-client.sh -init   => Have the config files generated for you in the current folder
     2. Edit the files accordingly
     3. Run any signing command (see examples below)
 
 Examples:
     [timestamp]
-    1. > ./bin/ais-client.sh -type timestamp -config config.properties -input fileIn.pdf -output fileOut.pdf
-    2. > ./bin/ais-client.sh -v -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
+    1. > ./bin/itext7-ais-client.sh -type timestamp -config config.properties -input fileIn.pdf -output fileOut.pdf
+    2. > ./bin/itext7-ais-client.sh -v -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
     [static]
-    3. > ./bin/ais-client.sh -type static -input fileIn.pdf
-    4. > ./bin/ais-client.sh -vv -type static -input fileIn.pdf -output fileOut.pdf -config "/custom/sign-pdf.properties"
+    3. > ./bin/itext7-ais-client.sh -type static -input fileIn.pdf
+    4. > ./bin/itext7-ais-client.sh -vv -type static -input fileIn.pdf -output fileOut.pdf -config "/custom/sign-pdf.properties"
     [on demand]
-    5. > ./bin/ais-client.sh -type ondemand -input fileIn.pdf -output fileOut.pdf
+    5. > ./bin/itext7-ais-client.sh -type onDemand -input fileIn.pdf -output fileOut.pdf
     [on demand with mobile id authorization]
-    6. > ./bin/ais-client.sh -vvv -type ondemand-stepup -input fileIn.pdf -output fileOut.pdf
+    6. > ./bin/itext7-ais-client.sh -vvv -type onDemand-stepUp -input fileIn.pdf -output fileOut.pdf
