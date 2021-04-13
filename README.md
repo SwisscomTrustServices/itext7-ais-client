@@ -1,176 +1,114 @@
-AIS: iText
-============
+# Swisscom iText7 AIS Java client
 
-Java source code and command line tool to sign PDF with iText.
+A Java client library for using the [Swisscom All-in Signing Service (AIS)](https://www.swisscom.ch/en/business/enterprise/offer/security/all-in-signing-service.html)
+to sign and/or timestamp PDF documents. The library can be used either as a project dependency or as a command-line tool for batch operations.
+It relies on the [Apache PDFBox](https://pdfbox.apache.org/) library for PDF processing.
 
-### Usage
+## Getting started
 
-````
-Usage: com.swisscom.ais.itext7.SignPDF [OPTIONS]
+To start using the Swisscom AIS service and this client library, do the following:
+1. [Get authentication details to use with the AIS client](docs/get-authentication-details.md).
+2. [Build or download the AIS client binary package](docs/build-or-download.md)
+3. [Configure the AIS client for your use case](docs/configure-the-AIS-client.md)
+4. Use the AIS client, either [programmatically](docs/use-the-AIS-client-programmatically.md) or from the [command line](docs/use-the-AIS-client-via-CLI.md)
 
-OPTIONS
+Other topics of interest might be:
+* [On PAdES Long Term Validation support](docs/pades-long-term-validation.md)
 
-  -infile=VALUE           - Source Filename, PDF to be signed
-  -outfile=VALUE          - Target Filename, signed PDF
+## Quick examples
 
-  ### TIMESTAMP SIGNATURES ###
-  -type=timestamp         - Signature Type RFC 3161
+The rest of this page provides some quick examples for using the AIS client. Please see the links
+above for detailed instructions on how to get authentication data, download and configure
+the AIS client. The following snippets assume that you are already set up.
 
-  ### SIGNATURES WITH STATIC CERTIFICATES ###
-  -type=sign              - Signature Type RFC 3369
-
-  ### SIGNATURES WITH ON DEMAND CERTIFICATES ###
-  -type=sign              - Signature Type RFC 3369
-  -dn=VALUE               - Subject Distinguished Name for the On Demand Certificate
-                            Supported attributes, separated by a comma:
-                            [mandatory]
-                             - cn or CommonName
-                             - c or CountryName
-                            [optional]
-                             - EmailAddress
-                             - FivenName
-                             - l or LocalityName
-                             - ou or OrganizationalUnitName
-                             - o or OrganizationName
-                             - SerialNumber
-                             - st or StateOrProvinceName
-                             - sn or Surname
-  Optional Step-Up Authorization (Declaration of Will):
-  -stepUpMsisdn=VALUE        - Phone number (requires -dn -stepUpMsg -stepUpLang)
-  -stepUpMsg=VALUE           - Message to be displayed (requires -dn -stepUpMsisdn -stepUpLang)
-                            A placeholder #TRANSID# may be used anywhere in the message to include a unique transaction id
-  -stepUpLang=VALUE          - Language of the message to be displayed (requires -dn -stepUpMsisdn -stepUpMsg)
-                            supported values:
-                             - en (english)
-                             - de (deutsch)
-                             - fr (français)
-                             - it (italiano)
-  -stepUpSerialNumber=VALUE  - Optional: Verify the MobileID / PwdOTP SerialNumber (16 chars; starting with 'MIDCHE' or 'SAS01')
-                            Document will only be signed if it matched the actual SerialNumber                        
-
-  ### ADOBE PDF SETTINGS ###
-  -reason=VALUE           - Signing Reason
-  -location=VALUE         - Signing Location
-  -contact=VALUE          - Signing Contact
-  -certlevel=VALUE        - Certify the PDF, at most one certification per PDF is allowed
-                             Supported values:
-                             - 1 (no further changes allowed)
-                             - 2 (form filling and further signing allowed)
-                             - 3 (form filling, annotations and further signing allowed)
-
-  ### DEBUG OPTIONS ###
-  -v                      - Verbose output
-  -vv                     - More Verbose output
-  -config=VALUE           - Custom path to the properties file (signpdf.properties)
-
-EXAMPLES
-
-  [timestamp]
-    java com.swisscom.ais.itext7.SignPDF -type=timestamp -infile=sample.pdf -outfile=signed.pdf
-    java com.swisscom.ais.itext7.SignPDF -v -type=timestamp -infile=sample.pdf -outfile=signed.pdf
-
-  [sign with static certificate]
-    java com.swisscom.ais.itext7.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf
-    java com.swisscom.ais.itext7.SignPDF -v -config=/tmp/signpdf.properties -type=sign -infile=sample.pdf -outfile=signed.pdf -reason=Approved -location=Berne -contact=alice@acme.com
-
-  [sign with on demand certificate]
-    java com.swisscom.ais.itext7.SignPDF -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH'
-
-  [sign with on demand certificate and mobile id authorization]
-    java com.swisscom.ais.itext7.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en
-    java com.swisscom.ais.itext7.SignPDF -v -type=sign -infile=sample.pdf -outfile=signed.pdf -dn='cn=Alice Smith,c=CH' -stepUpMsisdn=41792080350 -stepUpMsg='acme.com: Sign the PDF? (#TRANSID#)' -stepUpLang=en -stepUpSerialNumber=MIDCHE2EG8NAWUB3
-````   
-
-#### Dependencies
-
-This java application has external dependencies (libraries). They are located in the `./lib` subfolder.
-The latest version may be downloaded from the following source:
-
-1: http://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
-
-Version 2.0.2 has been successfully tested
-
-2: http://sourceforge.net/projects/itext
-
-Version 5.4.5 has been successfully tested
-
-3: http://www.bouncycastle.org/latest_releases.html
-
-bcprov-jdk15on-150.jar has been successfully tested
-bcpkix-jdk15on-150.jar has been successfully tested
-
-#### Paths & Placeholders
-
-The following placeholder will be used in this README (see sections below)
+### Command line usage
+Get a help listing by calling the client without any parameters:
+```shell
+./bin/itext7-ais-client.sh
 ```
-<JAR>   = Path to the ./jar subfolder containing the latest Java Archive
-<SRC>   = Path to the ./src subfolder containing the *.java source files
-<LIB>   = Path to the ./lib subfolder containing the libraries
-<CLASS> = Path to the directory where class files will be created
-<CFG>   = Path to the signpdf.properties file
-<DOC>   = Path to the ./doc subfolder containing the JavaDoc
+or
+```shell
+./bin/itext7-ais-client.sh -help
+```
+Get a default configuration file set in the current folder using the _-init_ parameter:
+```shell
+./bin/itext7-ais-client.sh -init
+```
+Apply an On Demand signature with Step Up on a local PDF file:
+```shell
+./bin/itext7-ais-client.sh -type onDemand-stepUp -input local-sample-doc.pdf -output test-sign.pdf
+```
+You can also add the following parameters for extra help:
+
+- _-v_: verbose log output (sets most of the client loggers to debug)
+- _-vv_: even more verbose log output (sets all the client loggers to debug, plus the Apache HTTP Client to debug, showing input and output HTTP traffic)
+- _-config_: select a custom properties file for configuration (by default it looks for the one named _sign-pdf.properties_)
+
+More than one file can be signed/timestamped at once:
+```shell
+./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf -input doc2.pdf -input doc3.pdf
 ```
 
-#### Configuration
+You don't have to specify the output file:
+```shell
+./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf
+```
+The output file name is composed of the input file name plus a configurable _suffix_ (by default it is "-signed-#time", where _#time_
+is replaced at runtime with the current date and time). You can customize this suffix:
+```shell
+./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf -suffix -output-#time 
+```
 
-Refer to `signpdf.properties` configuration file and modify the configuration properties accordingly.
+### Programmatic usage
+Once you add the AIS client library as a dependency to your project, you can configure it in the following way:
+```java
+    // configuration for the REST client; this is done once per application lifetime
+    RestClientConfiguration restConfig = RestClientConfiguration.builder()
+        .withServiceSignUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/sign")
+        .withServicePendingUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/pending")
+        .withServerCertificateFile("/home/user/ais-server.crt")
+        .withClientKeyFile("/home/user/ais-client.key")
+        .withClientKeyPassword("secret")
+        .withClientCertificateFile("/home/user/ais-client.crt")
+        .build();
 
-#### Run the JAR archive
+    SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-You may use the latest Java Archive (JAR) `signpdf-x.y.z.jar` located in the `./jar` subfolder.
+    // load the AIS client config; this is done once per application lifetime
+    AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
-Run the JAR (Unix/OSX): `java -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
+    try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+        // third, configure a UserData instance with details about this signature
+        // this is done for each signature (can also be created once and cached on a per-user basis)
+        UserData userData = UserData.builder()
+            .withClaimedIdentityName("ais-90days-trial")
+            .withClaimedIdentityKey("keyEntity")
+            .withDistinguishedName("cn=TEST User, givenname=Max, surname=Maximus, c=US, serialnumber=abcdefabcdefabcdefabcdefabcdef")
+            .withStepUpLanguage("en")
+            .withStepUpMessage("Please confirm the signing of the document")
+            .withStepUpMsisdn("40799999999")
+            .withSignatureReason("For testing purposes")
+            .withSignatureLocation("Topeka, Kansas")
+            .withSignatureContactInfo("test@test.com")
+            .withSignatureStandard(SignatureStandard.PDF)
+            .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
+            .build();
 
-Run the JAR (Unix/OSX) with custom path to the properties file:
-`java -DpropertyFile.path=<CFG> -cp "<JAR>/signpdf-x.y.z.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
+        // fourth, populate a PdfHandle with details about the document to be signed. More than one PdfHandle can be given
+        PdfMetadata document = new PdfMetadata(new FileInputStream("/home/user/input.pdf"),
+                                               new FileOutputStream("/home/user/signed-output.pdf"), DigestAlgorithm.SHA256);
 
-Run the JAR (Unix/OSX) with DEBUG enabled:
-`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<JAR>/signpdf.jar:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
+        // finally, do the signature
+        SignatureResult result = aisClient.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
+        if (result == SignatureResult.SUCCESS) {
+            // yay!
+        }
+    }
+```
 
-Create the latest JAR: `jar cfe <JAR>/signpdf-x.y.z.jar com.swisscom.ais.itext7.SignPDF -C <CLASS> .`
+## References
 
-If you're on Windows then use a semicolon ; instead of the colon : 
-
-#### Compile & Run the Java Classes
-
-The source files can be compiled as follows. 
-
-Compile the sources: `javac -d <CLASS> -cp "<LIB>/*" <SRC>/*.java`
-
-Note: The class files are generated in a directory hierarchy which reflects the given package structure: `<CLASS>/swisscom/com/ais/itext/*.class`
-
-The compiled application can be run as follows.
-
-Run the application (Unix/OSX):
-`java -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
-
-Run the application (Unix/OSX) with custom path to the properties file:
-`java -DpropertyFile.path=<CFG> -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
-
-Run the application (Unix/OSX) with DEBUG enabled:
-`java -Djavax.net.debug=all -Djava.security.debug=certpath -cp "<CLASS>:<LIB>/*" com.swisscom.ais.itext7.SignPDF`
-
-If you're on Windows then use a semicolon ; instead of the colon : 
-
-#### JavaDoc
-
-The latest JavaDoc is located in the `./doc` subfolder.
-
-Create the latest JavaDoc: `javadoc -windowtitle "Swisscom All-in Signing Service vx.y.z" -doctitle "<h1>Swisscom All-in Signing Service vx.y.z</h1>" -footer "Swisscom All-in Signing Service vx.y.z" -d <DOC> -private -sourcepath <SRC> com.swisscom.ais.itext7`
-
-#### Certificate Handling
-
-PKCS12 certificate file consisting of public certificate and private key.
-
-Extraction: 
-1. Extract public client certificate:
-
-   `openssl pkcs12 -in <yourPKCS12>.p12 -clcerts -nokeys | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > public.crt`
-
-2. Extract password protected private key
-
-   `openssl pkcs12 -in <yourPKCS12>.p12 -nocerts -out encpriv.key`
-
-3. Extract decrypted private key
-
-   `openssl rsa -in encpriv.key -out decpriv.key`
+- [Swisscom All-In Signing Service homepage](https://www.swisscom.ch/en/business/enterprise/offer/security/all-in-signing-service.html)
+- [Swisscom All-In Signing Service reference documentation (PDF)](http://documents.swisscom.com/product/1000255-Digital_Signing_Service/Documents/Reference_Guide/Reference_Guide-All-in-Signing-Service-en.pdf)
+- [Swisscom Trust Services documentation](https://trustservices.swisscom.com/en/downloads/)
+- [Apache PDFBox library](https://pdfbox.apache.org/)
