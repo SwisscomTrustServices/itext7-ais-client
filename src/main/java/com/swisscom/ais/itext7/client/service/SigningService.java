@@ -56,7 +56,7 @@ public class SigningService {
         clientLogger.info("Start performing the signings for the input file(s). You can trace the corresponding details using the {} trace id.",
                           userData.getTransactionId());
         SignatureResult signatureResult = sign(client, pdfsMetadata, signatureMode, userData);
-        clientLogger.info("Signature(s) final result: {}", signatureResult);
+        clientLogger.info("Signature(s) final result: {} - {}", signatureResult, userData.getTransactionId());
         return signatureResult;
     }
 

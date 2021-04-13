@@ -160,7 +160,7 @@ For example, the following simple _ConfigurationProvider_ implementation will lo
 _application.yml_ file:
 
 ```java
-import com.swisscom.ais.client.utils.ConfigurationProvider;
+import com.swisscom.ais.itext7.client.common.provider.ConfigurationProvider;
 import org.springframework.core.env.Environment;
 
 public class ConfigurationProviderSpringImpl implements ConfigurationProvider {
