@@ -80,7 +80,6 @@ public class PdfDocumentHandler implements Closeable {
     private PdfWriter pdfWriter;
     private ByteArrayOutputStream inMemoryStream;
     private PdfDocumentSigner pdfSigner;
-    private PdfDocument pdfDocument;
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
@@ -102,15 +101,12 @@ public class PdfDocumentHandler implements Closeable {
 
         digestAlgorithm = algorithm;
         id = IdGenerator.generateDocumentId();
-        ByteArrayOutputStream savedStream = new ByteArrayOutputStream();
-        savedStream.write(StreamUtil.inputStreamToArray(inputStream));
-
-        pdfDocument = new PdfDocument(new PdfReader(new ByteArrayInputStream(savedStream.toByteArray()), new ReaderProperties()));
-        SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
-        boolean hasSignature = signatureUtil.getSignatureNames().size() > 0;
-
-        pdfReader = new PdfReader(new ByteArrayInputStream(savedStream.toByteArray()), new ReaderProperties());
         inMemoryStream = new ByteArrayOutputStream();
+        inMemoryStream.write(StreamUtil.inputStreamToArray(inputStream));
+
+        boolean hasSignature = hasDocumentSignature();
+        pdfReader = new PdfReader(new ByteArrayInputStream(inMemoryStream.toByteArray()), new ReaderProperties());
+        inMemoryStream.reset();
         pdfWriter = new PdfWriter(inMemoryStream, new WriterProperties().addXmpMetadata().setPdfVersion(PdfVersion.PDF_1_0));
         StampingProperties stampingProperties = new StampingProperties();
         pdfSigner = new PdfDocumentSigner(pdfReader, pdfWriter, hasSignature ? stampingProperties.useAppendMode() : stampingProperties);
@@ -138,7 +134,15 @@ public class PdfDocumentHandler implements Closeable {
         PdfHashSignatureContainer hashSignatureContainer = new PdfHashSignatureContainer(algorithm.getDigestAlgorithm(),
                                                                                          new PdfDictionary(signatureDictionary));
         documentHash = pdfSigner.computeHash(hashSignatureContainer, signatureType.getEstimatedSignatureSizeInBytes());
-        closeResource(savedStream);
+    }
+
+    private boolean hasDocumentSignature() throws IOException {
+        try (ByteArrayInputStream is = new ByteArrayInputStream(inMemoryStream.toByteArray());
+             PdfReader reader = new PdfReader(is, new ReaderProperties());
+             PdfDocument pdfDocument = new PdfDocument(reader)) {
+            SignatureUtil signatureUtil = new SignatureUtil(pdfDocument);
+            return signatureUtil.getSignatureNames().size() > 0;
+        }
     }
 
     private String getOptionalAttribute(String attribute) {
@@ -173,13 +177,12 @@ public class PdfDocumentHandler implements Closeable {
             pdfSigner.signWithAuthorizedSignature(new PdfSignatureContainer(externalSignature), estimatedSize);
 
             if (AisObjectUtils.anyNotNull(encodedCrlEntries, encodedOcspEntries)) {
-                extendDocumentWithCrlOcspMetadata(new ByteArrayInputStream(inMemoryStream.toByteArray()), encodedCrlEntries, encodedOcspEntries);
+                extendDocumentWithCrlOcspMetadata(encodedCrlEntries, encodedOcspEntries);
             } else {
                 processingLogger.info("No CRL and OCSP entries were received to be embedded into the PDF - {}", trace.getId());
                 outputStream.write(inMemoryStream.toByteArray());
             }
 
-            closeResource(pdfDocument);
             closeResource(inMemoryStream);
             closeResource(outputStream);
         } catch (IOException | GeneralSecurityException e) {
@@ -187,7 +190,7 @@ public class PdfDocumentHandler implements Closeable {
         }
     }
 
-    private void extendDocumentWithCrlOcspMetadata(InputStream documentStream, List<String> encodedCrlEntries, List<String> encodedOcspEntries) {
+    private void extendDocumentWithCrlOcspMetadata(List<String> encodedCrlEntries, List<String> encodedOcspEntries) {
         if (pdfSigner.getCertificationLevel() == PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED) {
             throw new AisClientException(String.format("Could not apply revocation information (LTV) to the DSS Dictionary. Document contains a " +
                                                        "certification that does not allow any changes - %s", trace.getId()));
@@ -196,7 +199,8 @@ public class PdfDocumentHandler implements Closeable {
         List<byte[]> crl = mapEncodedEntries(encodedCrlEntries, this::mapEncodedCrl);
         List<byte[]> ocsp = mapEncodedEntries(encodedOcspEntries, this::mapEncodedOcsp);
 
-        try (PdfReader reader = new PdfReader(documentStream);
+        try (InputStream documentStream = new ByteArrayInputStream(inMemoryStream.toByteArray());
+             PdfReader reader = new PdfReader(documentStream);
              PdfWriter writer = new PdfWriter(outputStream);
              PdfDocument pdfDocument = new PdfDocument(reader, writer, new StampingProperties().preserveEncryption().useAppendMode())) {
             LtvVerification validation = new LtvVerification(pdfDocument);
@@ -296,7 +300,6 @@ public class PdfDocumentHandler implements Closeable {
     public void close() {
         closeResource(pdfReader);
         closeResource(pdfWriter);
-        closeResource(pdfDocument);
         closeResource(inMemoryStream);
         closeResource(inputStream);
         closeResource(outputStream);

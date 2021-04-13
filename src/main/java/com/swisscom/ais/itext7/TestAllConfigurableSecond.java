@@ -49,26 +49,24 @@ public class TestAllConfigurableSecond {
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-        AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient);
+        try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+            // build the signing service
+            SigningService signingService = new SigningService(client);
 
-        // build the signing service
-        SigningService signingService = new SigningService(client);
+            // prepare the PDF metadata to sign
+            String inputFilePath = properties.getProperty("local.test.inputFile");
+            String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
+            PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
 
-        // prepare the PDF metadata to sign
-        String inputFilePath = properties.getProperty("local.test.inputFile");
-        String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
-        PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
+            // load even the user data from the properties store
+            UserData userData = new UserData()
+                .fromProperties(properties)
+                .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
+                .build();
 
-        // load even the user data from the properties store
-        UserData userData = new UserData()
-            .fromProperties(properties)
-            .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
-            .build();
-
-        SignatureResult result = signingService.performSignings(Collections.singletonList(document), SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
-        System.out.println("Finish to sign the document(s) with the status: " + result);
-
-        // don't forget to close the AIS client resource
-        client.close();
+            SignatureResult result = signingService.performSignings(Collections.singletonList(document),
+                                                                    SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
+            System.out.println("Finish to sign the document(s) with the status: " + result);
+        }
     }
 }
