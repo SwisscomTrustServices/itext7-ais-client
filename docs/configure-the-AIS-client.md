@@ -6,7 +6,7 @@ the client depends a lot on how you plan to use the client and integrate it in y
 The AIS client can be configured from a Java properties file. Here is an example of such a file:
 
 ```properties
-# The license file path. Also, env placeholder is supported (e.g. ${AIS-PRIVATE-KEY-SECRET})
+# The iText license file path. Also, env placeholder is supported (e.g. ${AIS-PRIVATE-KEY-SECRET})
 license.file=${ITEXT_LICENSE_FILE_PATH}
 # The AIS server REST URL for sending the Signature requests
 server.rest.signUrl=https://ais.swisscom.com/AIS-Server/rs/v1.0/sign
@@ -185,7 +185,7 @@ So, then, add the following to your _application.yml_ file:
 ```yaml
 swisscom:
   ais-client:
-    # The license file path. Also, env placeholder is supported (e.g. ${AIS-PRIVATE-KEY-SECRET})
+    # The iText license file path. Also, env placeholder is supported (e.g. ${AIS-PRIVATE-KEY-SECRET})
     license.file: ${ITEXT_LICENSE_FILE_PATH}
     server:
       # The AIS server REST URL for sending the Signature requests
