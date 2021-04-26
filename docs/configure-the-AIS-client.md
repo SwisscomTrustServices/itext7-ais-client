@@ -3,7 +3,8 @@ To use the AIS client, you first have to [obtain it (or build it)](build-or-down
 the client depends a lot on how you plan to use the client and integrate it in your project/setup.
 
 ## Properties files
-The AIS client can be configured from a Java properties file. Here is an example of such a file:
+The AIS client can be configured from a Java properties file. Dedicate placeholder ```${...}``` can be used for the iText license file path and for 
+the private key secret in order to load the value from the environment variables. Here is an example of such a file:
 
 ```properties
 # The iText license file path. Also, env placeholder is supported (e.g. ${AIS-PRIVATE-KEY-SECRET})
@@ -96,7 +97,7 @@ AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(p
 RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
 SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+try (AisClient aisClient = new AisClientImpl(aisConfig, restClient)) {
     UserData userData = new UserData()
         .fromProperties(properties)
         .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
@@ -122,7 +123,7 @@ AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(p
 RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
 SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+try (AisClient client = new AisClientImpl(aisConfig, restClient)) {
     String inputFilePath = properties.getProperty("local.test.inputFile");     
     String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
     PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
@@ -152,7 +153,7 @@ as a Spring bean and have its properties be populated in a _Configuration_ bean 
 
 Moreover, in a [Spring Boot](https://spring.io/projects/spring-boot) setup, you can easily integrate the configuration of the AIS client in
 the central _application.yml_ configuration file, using the 
-[ConfigurationProvider](../src/main/java/com/swisscom/ais/itext7/client/common/provider/ConfigurationProvider.java) interface.
+[ConfigurationProvider](../src/main/java/com/swisscom/ais/itext7/client/config/ConfigurationProvider.java) interface.
 
 For example, the following simple _ConfigurationProvider_ implementation will load the AIS client configuration from the Spring Boot's 
 _application.yml_ file:

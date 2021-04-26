@@ -79,7 +79,7 @@ Once you add the AIS client library as a dependency to your project, you can con
     // Use the ${...} placeholder in order to access env vars
     AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
-    try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+    try (AisClient aisClient = new AisClientImpl(aisConfig, restClient)) {
         // third, configure a UserData instance with details about this signature
         // this is done for each signature (can also be created once and cached on a per-user basis)
         UserData userData = UserData.builder()

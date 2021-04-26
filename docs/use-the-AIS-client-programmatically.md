@@ -56,7 +56,7 @@ This section describes the usage of the library in code. See the sample files
 in the [root source folder](../src/main/java/com/swisscom/ais/itext7) for complete examples of how to use the library in code.
 
 First create the configuration objects, one for the REST client 
-([RestClientConfiguration](../src/main/java/com/swisscom/ais/itext7/client/rest/config/RestClientConfiguration.java)) and one for the AIS client 
+([RestClientConfiguration](../src/main/java/com/swisscom/ais/itext7/client/rest/RestClientConfiguration.java)) and one for the AIS client 
 ([AISClientConfiguration](../src/main/java/com/swisscom/ais/itext7/client/config/AisClientConfiguration.java)). This needs to be done once per 
 application lifetime, as the AIS client, once it is created and properly configured, can be reused over and over for each incoming request. It is 
 implemented in a thread-safe way and makes use of proper HTTP connection pooling in order to correctly reuse resources.
@@ -82,7 +82,7 @@ AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_L
 
 Finally, create the AIS client with these objects:
 ```java
-try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+try (AisClient aisClient = new AisClientImpl(aisConfig, restClient)) {
     // use the client here
 }
 ```
