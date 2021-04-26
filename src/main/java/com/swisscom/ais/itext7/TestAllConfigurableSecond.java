@@ -19,14 +19,11 @@ import com.swisscom.ais.itext7.client.AisClient;
 import com.swisscom.ais.itext7.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext7.client.impl.AisClientImpl;
 import com.swisscom.ais.itext7.client.model.PdfMetadata;
-import com.swisscom.ais.itext7.client.model.SignatureMode;
 import com.swisscom.ais.itext7.client.model.SignatureResult;
 import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
-import com.swisscom.ais.itext7.client.service.SigningService;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -49,10 +46,7 @@ public class TestAllConfigurableSecond {
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(properties).build();
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-        try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
-            // build the signing service
-            SigningService signingService = new SigningService(client);
-
+        try (AisClient client = new AisClientImpl(aisConfig, restClient)) {
             // prepare the PDF metadata to sign
             String inputFilePath = properties.getProperty("local.test.inputFile");
             String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
@@ -64,8 +58,7 @@ public class TestAllConfigurableSecond {
                 .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
                 .build();
 
-            SignatureResult result = signingService.performSignings(Collections.singletonList(document),
-                                                                    SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
+            SignatureResult result = client.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
             System.out.println("Finish to sign the document(s) with the status: " + result);
         }
     }

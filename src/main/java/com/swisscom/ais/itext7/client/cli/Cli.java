@@ -23,12 +23,12 @@ import com.swisscom.ais.itext7.client.config.LogbackConfiguration;
 import com.swisscom.ais.itext7.client.impl.AisClientImpl;
 import com.swisscom.ais.itext7.client.model.ConsentUrlCallback;
 import com.swisscom.ais.itext7.client.model.PdfMetadata;
+import com.swisscom.ais.itext7.client.model.SignatureResult;
 import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
-import com.swisscom.ais.itext7.client.service.SigningService;
+import com.swisscom.ais.itext7.client.utils.ClientUtils;
 import com.swisscom.ais.itext7.client.utils.FileUtils;
 import com.swisscom.ais.itext7.client.utils.PropertyUtils;
 
@@ -97,9 +97,7 @@ public class Cli {
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(configProperties).build();
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-        try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
-            SigningService signingService = new SigningService(client);
-
+        try (AisClient client = new AisClientImpl(aisConfig, restClient)) {
             ConsentUrlCallback consentUrlCallback = ((consentUrl, data) -> {
                 System.out.println(SEPARATOR);
                 System.out.println("Consent URL for declaration of will available here: " + consentUrl);
@@ -112,7 +110,11 @@ public class Cli {
             List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
                 .map(inputFilePath -> buildPdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
                 .collect(Collectors.toList());
-            signingService.performSignings(pdfsMetadata, context.getSignature(), userData);
+
+            clientLogger.info("Start performing the signings for the input file(s). You can trace the corresponding details using the {} trace id.",
+                              userData.getTransactionId());
+            SignatureResult signatureResult = ClientUtils.sign(client, pdfsMetadata, context.getSignature(), userData);
+            clientLogger.info("Signature(s) final result: {} - {}", signatureResult, userData.getTransactionId());
         }
     }
 

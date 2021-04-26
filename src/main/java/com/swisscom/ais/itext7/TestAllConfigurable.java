@@ -24,7 +24,6 @@ import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -50,7 +49,7 @@ public class TestAllConfigurable {
         // load the AIS client config
         AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(properties).build();
 
-        try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+        try (AisClient aisClient = new AisClientImpl(aisConfig, restClient)) {
             // third, load even the user data from the properties store
             UserData userData = new UserData()
                 .fromProperties(properties)

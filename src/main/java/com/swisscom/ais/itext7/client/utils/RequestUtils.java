@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7.client.service;
+package com.swisscom.ais.itext7.client.utils;
 
 import com.swisscom.ais.itext7.client.impl.PdfDocumentHandler;
 import com.swisscom.ais.itext7.client.model.RevocationInformation;
@@ -34,14 +34,14 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-public class AisRequestService {
+public class RequestUtils {
 
     private static final String SWISSCOM_BASIC_PROFILE = "http://ais.swisscom.ch/1.1";
     private static final String CLAIMED_IDENTITY_DELIMITER = ":";
 
-    public AISSignRequest buildAisSignRequest(List<PdfDocumentHandler> documents, SignatureMode signatureMode, SignatureType signatureType,
-                                              UserData userData, List<AdditionalProfile> additionalProfiles, boolean withStepUp,
-                                              boolean withCertificateRequest) {
+    public static AISSignRequest buildAisSignRequest(List<PdfDocumentHandler> documents, SignatureMode signatureMode, SignatureType signatureType,
+                                                     UserData userData, List<AdditionalProfile> additionalProfiles, boolean withStepUp,
+                                                     boolean withCertificateRequest) {
         List<DocumentHash> documentsHashes = documents.stream()
             .map(doc -> new DocumentHash()
                 .withId(doc.getId())
@@ -61,7 +61,7 @@ public class AisRequestService {
         return new AISSignRequest().withSignRequest(request);
     }
 
-    public AISPendingRequest buildAisPendingRequest(String responseId, UserData userData) {
+    public static AISPendingRequest buildAisPendingRequest(String responseId, UserData userData) {
         com.swisscom.ais.itext7.client.rest.model.pendingreq.ClaimedIdentity claimedIdentity =
             new com.swisscom.ais.itext7.client.rest.model.pendingreq.ClaimedIdentity();
         claimedIdentity.withName(userData.getClaimedIdentityName());
@@ -75,9 +75,9 @@ public class AisRequestService {
         return new AISPendingRequest().withAsyncPendingRequest(request);
     }
 
-    private OptionalInputs buildRequestOptionalInputs(SignatureMode signatureMode, SignatureType signatureType, UserData userData,
-                                                      List<AdditionalProfile> additionalProfiles, boolean withStepUp,
-                                                      boolean withCertificateRequest) {
+    private static OptionalInputs buildRequestOptionalInputs(SignatureMode signatureMode, SignatureType signatureType, UserData userData,
+                                                             List<AdditionalProfile> additionalProfiles, boolean withStepUp,
+                                                             boolean withCertificateRequest) {
         AddTimestamp addTimestamp = null;
         if (userData.isAddTimestamp()) {
             addTimestamp = new AddTimestamp().withType(SignatureType.TIMESTAMP.getUri());

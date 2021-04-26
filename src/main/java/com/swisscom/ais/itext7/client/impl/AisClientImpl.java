@@ -40,7 +40,7 @@ import com.swisscom.ais.itext7.client.rest.model.signresp.Result;
 import com.swisscom.ais.itext7.client.rest.model.signresp.ScExtendedSignatureObject;
 import com.swisscom.ais.itext7.client.rest.model.signresp.SignResponse;
 import com.swisscom.ais.itext7.client.rest.model.signresp.SignatureObject;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
+import com.swisscom.ais.itext7.client.utils.RequestUtils;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
 
 import org.slf4j.Logger;
@@ -60,12 +60,10 @@ public class AisClientImpl implements AisClient {
     private static final Logger protocolLogger = LoggerFactory.getLogger(Loggers.CLIENT_PROTOCOL);
     private static final String MISSING_MSISDN_MESSAGE = "<MSISDN> is missing";
 
-    private final AisRequestService requestService;
     private final AisClientConfiguration configuration;
     private final SignatureRestClient restClient;
 
-    public AisClientImpl(AisRequestService requestService, AisClientConfiguration configuration, SignatureRestClient restClient) {
-        this.requestService = requestService;
+    public AisClientImpl(AisClientConfiguration configuration, SignatureRestClient restClient) {
         this.configuration = configuration;
         this.restClient = restClient;
         initialize();
@@ -74,6 +72,7 @@ public class AisClientImpl implements AisClient {
     private void initialize() {
         try {
             LicenseKey.loadLicenseFile(configuration.getLicenseFilePath());
+            LicenseKey.scheduledCheck(null);
             String[] licenseeInfo = LicenseKey.getLicenseeInfo();
             clientLogger.info("Successfully load the {} iText license granted for company {}, with name {}, email {}, having version {} and "
                               + "producer line {}. Is license expired: {}.", licenseeInfo[8], licenseeInfo[2], licenseeInfo[0], licenseeInfo[1],
@@ -110,7 +109,6 @@ public class AisClientImpl implements AisClient {
     private SignatureResult performSigning(SignatureMode signatureMode, SignatureType signatureType, List<PdfMetadata> documentsMetadata,
                                            UserData userData, List<AdditionalProfile> profiles, boolean signWithStepUp,
                                            boolean signWithCertificateRequest) {
-        LicenseKey.scheduledCheck(null);
         Trace trace = new Trace(userData.getTransactionId());
         userData.validatePropertiesForSignature(signatureMode, trace);
         documentsMetadata.forEach(docMetadata -> docMetadata.validate(trace));
@@ -119,7 +117,7 @@ public class AisClientImpl implements AisClient {
 
         try {
             List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, documents);
-            AISSignRequest signRequest = requestService.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
+            AISSignRequest signRequest = RequestUtils.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
                                                                             signWithStepUp, signWithCertificateRequest);
             AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
 
@@ -255,7 +253,7 @@ public class AisClientImpl implements AisClient {
             for (int round = 0; round < configuration.getSignaturePollingRounds(); round++) {
                 protocolLogger.debug("Polling for signature status, round {}/{} - {}", round + 1, configuration.getSignaturePollingRounds(),
                                      trace.getId());
-                AISPendingRequest pendingRequest = requestService.buildAisPendingRequest(ResponseUtils.extractResponseId(localResponse), userData);
+                AISPendingRequest pendingRequest = RequestUtils.buildAisPendingRequest(ResponseUtils.extractResponseId(localResponse), userData);
                 localResponse = restClient.pollForSignatureStatus(pendingRequest, trace);
                 checkForConsentUrlInTheResponse(localResponse, userData, trace);
                 if (ResponseUtils.isResponseAsyncPending(localResponse)) {

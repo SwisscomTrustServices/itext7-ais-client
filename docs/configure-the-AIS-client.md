@@ -123,8 +123,6 @@ RestClientConfiguration restConfig = new RestClientConfiguration().fromPropertie
 SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
 try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
-    SigningService signingService = new SigningService(client);
-
     String inputFilePath = properties.getProperty("local.test.inputFile");     
     String outputFilePath = properties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
     PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
@@ -134,7 +132,7 @@ try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, re
         .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
         .build();
 
-    SignatureResult result = signingService.performSignings(Collections.singletonList(document), SignatureMode.ON_DEMAND_WITH_STEP_UP, userData);
+    SignatureResult result = client.signWithOnDemandCertificateAndStepUp(Collections.singletonList(document), userData);
     System.out.println("Finish to sign the document(s) with the status: " + result);
 }
 ```

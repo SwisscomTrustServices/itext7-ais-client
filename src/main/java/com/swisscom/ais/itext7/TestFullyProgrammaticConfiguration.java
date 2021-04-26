@@ -26,7 +26,6 @@ import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -55,7 +54,7 @@ public class TestFullyProgrammaticConfiguration {
         // then configure the AIS client; this is done once per application lifetime
         AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
-        try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
+        try (AisClient aisClient = new AisClientImpl(aisConfig, restClient)) {
             // third, configure a UserData instance with details about this signature
             // this is done for each signature (can also be created once and cached on a per-user basis)
             UserData userData = UserData.builder()

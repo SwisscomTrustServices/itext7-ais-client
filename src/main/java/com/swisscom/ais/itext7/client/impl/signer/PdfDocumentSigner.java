@@ -69,7 +69,9 @@ public class PdfDocumentSigner extends PdfSigner {
         byte[] authorizedSignature = externalSignatureContainer.sign(dataRangeStream);
 
         if (estimatedSize < authorizedSignature.length) {
-            throw new IOException("Not enough space");
+            throw new IOException(String.format("Not enough space. The estimated signature size [%d bytes] is less than the received authorized "
+                                                + "signature [%d bytes] which needs to be embedded into the document.", estimatedSize,
+                                                authorizedSignature.length));
         }
 
         byte[] paddedSignature = new byte[estimatedSize];

@@ -12,8 +12,7 @@ import com.swisscom.ais.itext7.client.model.VerboseLevel;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.service.AisRequestService;
-import com.swisscom.ais.itext7.client.service.SigningService;
+import com.swisscom.ais.itext7.client.utils.ClientUtils;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,9 +29,7 @@ public class SignatureTest {
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(configProperties).build();
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
-        try (AisClient client = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
-            SigningService signingService = new SigningService(client);
-
+        try (AisClient client = new AisClientImpl(aisConfig, restClient)) {
             String inputFilePath = configProperties.getProperty("local.test.inputFile");
             String outputFilePath = configProperties.getProperty("local.test.outputFilePrefix") + System.currentTimeMillis() + ".pdf";
             PdfMetadata document = new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
@@ -41,7 +38,7 @@ public class SignatureTest {
                 .fromProperties(configProperties)
                 .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
                 .build();
-            SignatureResult signatureResult = signingService.performSignings(pdfsMetadata, signatureMode, userData);
+            SignatureResult signatureResult = ClientUtils.sign(client, pdfsMetadata, signatureMode, userData);
             System.out.println("Finish to sign the document(s) with the status: " + signatureResult);
         }
     }
