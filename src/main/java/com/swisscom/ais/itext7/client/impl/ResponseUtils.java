@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7.client.impl.utils;
+package com.swisscom.ais.itext7.client.impl;
 
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.rest.model.ResultMajorCode;

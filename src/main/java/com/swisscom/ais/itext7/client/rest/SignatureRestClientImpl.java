@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.common.Loggers;
 import com.swisscom.ais.itext7.client.model.Trace;
-import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
 import com.swisscom.ais.itext7.client.rest.model.pendingreq.AISPendingRequest;
 import com.swisscom.ais.itext7.client.rest.model.signreq.AISSignRequest;
 import com.swisscom.ais.itext7.client.rest.model.signresp.AISSignResponse;

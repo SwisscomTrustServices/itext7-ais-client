@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7.client.impl.container;
+package com.swisscom.ais.itext7.client.impl;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.signatures.IExternalSignatureContainer;

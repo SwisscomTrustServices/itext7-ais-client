@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7.client.common.provider;
+package com.swisscom.ais.itext7.client.config;
+
+import java.util.Properties;
 
 /**
- * Utility adapter for allowing the REST and AIS clients to be configured using any external configuration source. Implementations of this
- * interface can, for example, extract the config from a database or from a Spring Boot configured environment (application.yml).
+ * Implementation of {@link ConfigurationProvider} that takes the requested properties from a standard Java {@link Properties} store.
  */
-public interface ConfigurationProvider {
+public class ConfigurationProviderPropertiesImpl implements ConfigurationProvider {
 
-    /**
-     * @param name the name of the property to look for
-     * @return the value of the property or <code>null</code> if the property is not defined.
-     */
-    String getProperty(String name);
+    private final Properties properties;
+
+    public ConfigurationProviderPropertiesImpl(Properties properties) {
+        this.properties = properties;
+    }
+
+    @Override
+    public String getProperty(String name) {
+        return properties.getProperty(name);
+    }
 
 }

@@ -23,7 +23,7 @@ import com.swisscom.ais.itext7.client.model.SignatureResult;
 import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
 import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
-import com.swisscom.ais.itext7.client.rest.config.RestClientConfiguration;
+import com.swisscom.ais.itext7.client.rest.RestClientConfiguration;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

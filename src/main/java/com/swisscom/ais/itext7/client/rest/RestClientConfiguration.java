@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7.client.rest.config;
+package com.swisscom.ais.itext7.client.rest;
 
 import com.swisscom.ais.itext7.client.common.PropertiesLoader;
-import com.swisscom.ais.itext7.client.common.provider.ConfigurationProvider;
+import com.swisscom.ais.itext7.client.config.ConfigurationProvider;
 import com.swisscom.ais.itext7.client.utils.ValidationUtils;
 
 public class RestClientConfiguration extends PropertiesLoader<RestClientConfiguration.Builder> {

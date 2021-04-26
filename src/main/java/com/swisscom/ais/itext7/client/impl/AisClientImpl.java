@@ -21,7 +21,6 @@ import com.swisscom.ais.itext7.client.AisClient;
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.common.Loggers;
 import com.swisscom.ais.itext7.client.config.AisClientConfiguration;
-import com.swisscom.ais.itext7.client.impl.utils.ResponseUtils;
 import com.swisscom.ais.itext7.client.model.PdfMetadata;
 import com.swisscom.ais.itext7.client.model.SignatureMode;
 import com.swisscom.ais.itext7.client.model.SignatureResult;

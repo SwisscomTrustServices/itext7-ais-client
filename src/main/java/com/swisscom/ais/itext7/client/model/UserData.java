@@ -17,7 +17,7 @@ package com.swisscom.ais.itext7.client.model;
 
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.common.PropertiesLoader;
-import com.swisscom.ais.itext7.client.common.provider.ConfigurationProvider;
+import com.swisscom.ais.itext7.client.config.ConfigurationProvider;
 import com.swisscom.ais.itext7.client.utils.IdGenerator;
 import com.swisscom.ais.itext7.client.utils.ValidationUtils;
 

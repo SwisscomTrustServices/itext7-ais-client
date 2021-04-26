@@ -16,7 +16,6 @@
 package com.swisscom.ais.itext7.client.config;
 
 import com.swisscom.ais.itext7.client.common.PropertiesLoader;
-import com.swisscom.ais.itext7.client.common.provider.ConfigurationProvider;
 import com.swisscom.ais.itext7.client.utils.ValidationUtils;
 
 public class AisClientConfiguration extends PropertiesLoader<AisClientConfiguration.Builder> {

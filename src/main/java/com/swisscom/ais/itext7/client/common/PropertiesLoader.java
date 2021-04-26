@@ -15,8 +15,8 @@
  */
 package com.swisscom.ais.itext7.client.common;
 
-import com.swisscom.ais.itext7.client.common.provider.ConfigurationProvider;
-import com.swisscom.ais.itext7.client.common.provider.ConfigurationProviderPropertiesImpl;
+import com.swisscom.ais.itext7.client.config.ConfigurationProvider;
+import com.swisscom.ais.itext7.client.config.ConfigurationProviderPropertiesImpl;
 import com.swisscom.ais.itext7.client.utils.PropertyUtils;
 
 import org.apache.commons.lang3.StringUtils;
