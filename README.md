@@ -2,15 +2,16 @@
 
 A Java client library for using the [Swisscom All-in Signing Service (AIS)](https://www.swisscom.ch/en/business/enterprise/offer/security/all-in-signing-service.html)
 to sign and/or timestamp PDF documents. The library can be used either as a project dependency or as a command-line tool for batch operations.
-It relies on the [Apache PDFBox](https://pdfbox.apache.org/) library for PDF processing.
+It relies on the [iText](https://itextpdf.com/en) library for PDF processing.
 
 ## Getting started
 
 To start using the Swisscom AIS service and this client library, do the following:
-1. [Get authentication details to use with the AIS client](docs/get-authentication-details.md).
-2. [Build or download the AIS client binary package](docs/build-or-download.md)
-3. [Configure the AIS client for your use case](docs/configure-the-AIS-client.md)
-4. Use the AIS client, either [programmatically](docs/use-the-AIS-client-programmatically.md) or from the [command line](docs/use-the-AIS-client-via-CLI.md)
+1. Acquire an [iText license](https://itextpdf.com/en/how-buy)
+2. [Get authentication details to use with the AIS client](docs/get-authentication-details.md).
+3. [Build or download the AIS client binary package](docs/build-or-download.md)
+4. [Configure the AIS client for your use case](docs/configure-the-AIS-client.md)
+5. Use the AIS client, either [programmatically](docs/use-the-AIS-client-programmatically.md) or from the [command line](docs/use-the-AIS-client-via-CLI.md)
 
 Other topics of interest might be:
 * [On PAdES Long Term Validation support](docs/pades-long-term-validation.md)
@@ -24,19 +25,19 @@ the AIS client. The following snippets assume that you are already set up.
 ### Command line usage
 Get a help listing by calling the client without any parameters:
 ```shell
-./bin/itext7-ais-client.sh
+./bin/ais-client.sh
 ```
 or
 ```shell
-./bin/itext7-ais-client.sh -help
+./bin/ais-client.sh -help
 ```
 Get a default configuration file set in the current folder using the _-init_ parameter:
 ```shell
-./bin/itext7-ais-client.sh -init
+./bin/ais-client.sh -init
 ```
 Apply an On Demand signature with Step Up on a local PDF file:
 ```shell
-./bin/itext7-ais-client.sh -type onDemand-stepUp -input local-sample-doc.pdf -output test-sign.pdf
+./bin/ais-client.sh -type ondemand-stepup -input local-sample-doc.pdf -output test-sign.pdf
 ```
 You can also add the following parameters for extra help:
 
@@ -46,17 +47,17 @@ You can also add the following parameters for extra help:
 
 More than one file can be signed/timestamped at once:
 ```shell
-./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf -input doc2.pdf -input doc3.pdf
+./bin/ais-client.sh -type ondemand-stepup -input doc1.pdf -input doc2.pdf -input doc3.pdf
 ```
 
 You don't have to specify the output file:
 ```shell
-./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf
+./bin/ais-client.sh -type ondemand-stepup -input doc1.pdf
 ```
 The output file name is composed of the input file name plus a configurable _suffix_ (by default it is "-signed-#time", where _#time_
 is replaced at runtime with the current date and time). You can customize this suffix:
 ```shell
-./bin/itext7-ais-client.sh -type onDemand-stepUp -input doc1.pdf -suffix -output-#time 
+./bin/ais-client.sh -type ondemand-stepup -input doc1.pdf -suffix -output-#time 
 ```
 
 ### Programmatic usage
@@ -75,6 +76,7 @@ Once you add the AIS client library as a dependency to your project, you can con
     SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
 
     // load the AIS client config; this is done once per application lifetime
+    // Use the ${...} placeholder in order to access env vars
     AisClientConfiguration aisConfig = new AisClientConfiguration(10, 10, "${ITEXT_LICENSE_FILE_PATH}");
 
     try (AisClient aisClient = new AisClientImpl(new AisRequestService(), aisConfig, restClient)) {
@@ -94,7 +96,7 @@ Once you add the AIS client library as a dependency to your project, you can con
             .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
             .build();
 
-        // fourth, populate a PdfHandle with details about the document to be signed. More than one PdfHandle can be given
+        // fourth, populate a PdfMetadata with details about the document to be signed. More than one PdfMetadata can be given
         PdfMetadata document = new PdfMetadata(new FileInputStream("/home/user/input.pdf"),
                                                new FileOutputStream("/home/user/signed-output.pdf"), DigestAlgorithm.SHA256);
 
@@ -111,4 +113,4 @@ Once you add the AIS client library as a dependency to your project, you can con
 - [Swisscom All-In Signing Service homepage](https://www.swisscom.ch/en/business/enterprise/offer/security/all-in-signing-service.html)
 - [Swisscom All-In Signing Service reference documentation (PDF)](http://documents.swisscom.com/product/1000255-Digital_Signing_Service/Documents/Reference_Guide/Reference_Guide-All-in-Signing-Service-en.pdf)
 - [Swisscom Trust Services documentation](https://trustservices.swisscom.com/en/downloads/)
-- [Apache PDFBox library](https://pdfbox.apache.org/)
+- [iText library](https://itextpdf.com/en)

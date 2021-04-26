@@ -14,7 +14,7 @@ where you run the above command. There are 2 packages that are built:
 
 - the _target/itext7-ais-X.X.X.jar_, which contains the binary files of the AIS client, without any of the dependencies
 - the _target/release_, which is a folder containing the AIS client in a standalone form, together with all the dependencies (the 
-  _lib_ folder) and the Unix and Windows scripts needed to run it. 
+  _libs_ folder) and the Unix and Windows scripts needed to run it. 
 
 ## Download the client
 The AIS client library can also be downloaded directly, without having to build it yourself. Just head over to the _Releases_ section of

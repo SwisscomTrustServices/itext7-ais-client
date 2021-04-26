@@ -203,7 +203,7 @@
                             <programs>
                                 <program>
                                     <mainClass>com.swisscom.ais.itext7.client.cli.Cli</mainClass>
-                                    <id>itext7-ais-client</id>
+                                    <id>ais-client</id>
                                 </program>
                             </programs>
                             <binFileExtensions>

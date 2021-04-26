@@ -37,10 +37,10 @@ Options:
     -vvv                                                - Be EXTRA-EXTRA verbose about what is going on (sets Logback config to debug, with HTTP and TLS traffic)
 
 Use cases:
-    1. > ./bin/itext7-ais-client.sh -init   => Have the config files generated for you in the current folder
+    1. > ./bin/ais-client.sh -init   => Have the config files generated for you in the current folder
     2. Edit the files accordingly
-    3. > ./bin/itext7-ais-client.sh -type timestamp -config config.properties -input fileIn.pdf -output fileOut.pdf
-    4. > ./bin/itext7-ais-client.sh -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
+    3. > ./bin/ais-client.sh -type timestamp -config config.properties -input fileIn.pdf -output fileOut.pdf
+    4. > ./bin/ais-client.sh -type timestamp -input file1.pdf -input file2.pdf -input file3.pdf
 ```
 
 Use the _-init_ parameter to create a set of configuration files in the local folder. These files can then be customized for your own case.
@@ -50,37 +50,37 @@ Use the _-v_, _-vv_ and _-vvv_ parameters to have more detailed logs in the cons
 ## Examples
 Start with a fresh set of configuration files:
 ```shell
-./bin/itext7-ais-client.sh -init
+./bin/ais-client.sh -init
 ```
 
 Timestamp a PDF document:
 ```shell
-./bin/itext7-ais-client.sh -type timestamp -input local-sample-doc.pdf -output timestamp-output.pdf
+./bin/ais-client.sh -type timestamp -input local-sample-doc.pdf -output timestamp-output.pdf
 ```
 
 Timestamp several PDF documents at once:
 ```shell
-./bin/itext7-ais-client.sh -v -type timestamp -input doc1.pdf -input doc2.pdf -input doc3.pdf -config config.properties
+./bin/ais-client.sh -v -type timestamp -input doc1.pdf -input doc2.pdf -input doc3.pdf -config config.properties
 ```
 
 Sign a PDF document with a static signature:
 ```shell
-./bin/itext7-ais-client.sh -v -type static -input doc1.pdf
+./bin/ais-client.sh -v -type static -input doc1.pdf
 ```
 
 Sign a PDF document with a static signature with extra logging info and specifying the output and config files:
 ```shell
-./bin/itext7-ais-client.sh -vv -type static -input doc1.pdf -output doc1Out.pdf -config "/custom/sign-pdf.properties"
+./bin/ais-client.sh -vv -type static -input doc1.pdf -output doc1Out.pdf -config "/custom/sign-pdf.properties"
 ```
 
 Sign a PDF document with an On Demand signature:
 ```shell
-./bin/itext7-ais-client.sh -type onDemand -input doc1.pdf -output doc1Out.pdf
+./bin/ais-client.sh -type ondemand -input doc1.pdf -output doc1Out.pdf
 ```
 
 Sign a PDF document with an On Demand signature with Step Up and complete extra logging:
 ```shell
-./bin/itext7-ais-client.sh -vvv -type onDemand-stepUp -input local-sample-doc.pdf -output signature-output.pdf
+./bin/ais-client.sh -vvv -type ondemand-stepup -input local-sample-doc.pdf -output signature-output.pdf
 ```
 
 Notes:

@@ -83,7 +83,7 @@ CLI interface, or you can use it to populate the objects that configure the clie
 
 *CLI usage:*
 ```shell
-./bin/itext7-ais-client.sh -type onDemand-stepUp -config config.properties -input local-sample-doc.pdf -output test-sign.pdf
+./bin/ais-client.sh -type ondemand-stepup -config config.properties -input local-sample-doc.pdf -output test-sign.pdf
 ```
 
 ##Programmatic usage

@@ -56,7 +56,7 @@ signature.claimedIdentityKey=keyEntity
 signature.distinguishedName=cn=TEST User, givenname=Max, surname=Maximus, c=US, serialnumber=abcdefabcdefabcdefabcdefabcdef
 ```
 
-Programmatically way:
+Programmatic way:
 ```java
 RestClientConfiguration restConfig = RestClientConfiguration.builder()
     .withServerCertificateFile("/home/user/ais-server.crt")
