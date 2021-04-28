@@ -39,9 +39,10 @@ import com.swisscom.ais.itext7.client.rest.model.signresp.Result;
 import com.swisscom.ais.itext7.client.rest.model.signresp.ScExtendedSignatureObject;
 import com.swisscom.ais.itext7.client.rest.model.signresp.SignResponse;
 import com.swisscom.ais.itext7.client.rest.model.signresp.SignatureObject;
-import com.swisscom.ais.itext7.client.utils.RequestUtils;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
+import com.swisscom.ais.itext7.client.utils.RequestUtils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,15 +70,17 @@ public class AisClientImpl implements AisClient {
     }
 
     private void initialize() {
-        try {
-            LicenseKey.loadLicenseFile(configuration.getLicenseFilePath());
-            LicenseKey.scheduledCheck(null);
-            String[] licenseeInfo = LicenseKey.getLicenseeInfo();
-            clientLogger.info("Successfully load the {} iText license granted for company {}, with name {}, email {}, having version {} and "
-                              + "producer line {}. Is license expired: {}.", licenseeInfo[8], licenseeInfo[2], licenseeInfo[0], licenseeInfo[1],
-                              licenseeInfo[6], licenseeInfo[4], licenseeInfo[7]);
-        } catch (LicenseKeyException e) {
-            clientLogger.error("Failed to load the iText license: {}", e.getMessage());
+        if (StringUtils.isNotBlank(configuration.getLicenseFilePath())) {
+            try {
+                LicenseKey.loadLicenseFile(configuration.getLicenseFilePath());
+                LicenseKey.scheduledCheck(null);
+                String[] licenseeInfo = LicenseKey.getLicenseeInfo();
+                clientLogger.info("Successfully load the {} iText license granted for company {}, with name {}, email {}, having version {} and "
+                                  + "producer line {}. Is license expired: {}.", licenseeInfo[8], licenseeInfo[2], licenseeInfo[0], licenseeInfo[1],
+                                  licenseeInfo[6], licenseeInfo[4], licenseeInfo[7]);
+            } catch (LicenseKeyException e) {
+                clientLogger.error("Failed to load the iText license: {}", e.getMessage());
+            }
         }
     }
 
@@ -117,7 +120,7 @@ public class AisClientImpl implements AisClient {
         try {
             List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, documents);
             AISSignRequest signRequest = RequestUtils.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
-                                                                            signWithStepUp, signWithCertificateRequest);
+                                                                          signWithStepUp, signWithCertificateRequest);
             AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
 
             if (signWithStepUp && !ResponseUtils.isResponseAsyncPending(signResponse)) {

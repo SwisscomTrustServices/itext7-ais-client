@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.function.Function;
 
+@SuppressWarnings("unused")
 public abstract class PropertiesLoader<T> {
 
     private static final String ENV_VARIABLE_PREFIX = "${";
@@ -63,16 +64,23 @@ public abstract class PropertiesLoader<T> {
         }
     }
 
-    public String extractStringProperty(ConfigurationProvider provider, String propertyName) {
-        return extractProperty(provider, propertyName);
+    public String extractStringProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
+        return extractProperty(provider, propertyName, mandatory);
     }
 
-    public int extractIntProperty(ConfigurationProvider provider, String propertyName) {
-        return Integer.parseInt(extractProperty(provider, propertyName));
+    public Integer extractIntProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
+        String property = extractProperty(provider, propertyName, mandatory);
+        if (property == null && !mandatory) {
+            return null;
+        }
+        return Integer.parseInt(property);
     }
 
-    public String extractSecretProperty(ConfigurationProvider provider, String propertyName) {
-        String property = extractProperty(provider, propertyName);
+    public String extractSecretProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
+        String property = extractProperty(provider, propertyName, mandatory);
+        if (property == null && !mandatory) {
+            return null;
+        }
         return shouldExtractFromEnvVariable(property) ? System.getenv(extractEnvPropertyName(property)) : property;
     }
 
@@ -89,8 +97,11 @@ public abstract class PropertiesLoader<T> {
         return StringUtils.isNotBlank(propertyValue) ? mapperFunction.apply(propertyValue) : defaultValue;
     }
 
-    private String extractProperty(ConfigurationProvider provider, String propertyName) {
+    private String extractProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
         String propertyValue = provider.getProperty(propertyName);
+        if (StringUtils.isBlank(propertyValue) && !mandatory) {
+            return null;
+        }
         validateProperty(propertyName, propertyValue);
         return propertyValue;
     }

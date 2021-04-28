@@ -44,6 +44,7 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.ssl.PrivateKeyStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
@@ -54,9 +55,10 @@ import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Security;
@@ -244,20 +246,43 @@ public class SignatureRestClientImpl implements SignatureRestClient {
         }
     }
 
-    public PrivateKey getPrivateKey(String filename, String keyPassword) throws IOException {
-        PEMParser pemParser = new PEMParser(new InputStreamReader(new FileInputStream(filename)));
-        PEMKeyPair keyPair = retrieveKeyFromParser(keyPassword, pemParser);
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
-        return converter.getPrivateKey(keyPair.getPrivateKeyInfo());
-    }
+    public static PrivateKey getPrivateKey(String fileName, String keyPassword) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(fileName));
+            // if we read a X509 key we will get immediately a PrivateKeyInfo
+            // if the key is a RSA key it is necessary to create a PEMKeyPair first
+            PrivateKeyInfo privateKeyInfo;
+            PEMParser pemParser;
+            try {
+                pemParser = new PEMParser(br);
+                privateKeyInfo = (PrivateKeyInfo) pemParser.readObject();
+            } catch (Exception ignored) {
+                br.close();
+                br = new BufferedReader(new FileReader(fileName));
+                pemParser = new PEMParser(br);
+                Object pemKeyPair = pemParser.readObject();
+                if (pemKeyPair instanceof PEMEncryptedKeyPair) {
+                    if (StringUtils.isBlank(keyPassword)) {
+                        throw new AisClientException("The client private key is encrypted but there is no key password provided " +
+                                                     "(check field 'client.auth.keyPassword' from the config.properties or from " +
+                                                     "the REST client configuration)");
+                    }
+                    PEMDecryptorProvider decryptionProv = new JcePEMDecryptorProviderBuilder().build(keyPassword.toCharArray());
+                    PEMKeyPair decryptedKeyPair = ((PEMEncryptedKeyPair) pemKeyPair).decryptKeyPair(decryptionProv);
+                    privateKeyInfo = decryptedKeyPair.getPrivateKeyInfo();
+                } else {
+                    privateKeyInfo = ((PEMKeyPair) pemKeyPair).getPrivateKeyInfo();
+                }
+            }
 
-    private PEMKeyPair retrieveKeyFromParser(String keyPassword, PEMParser pemParser) throws IOException {
-        if (StringUtils.isBlank(keyPassword)) {
-            return (PEMKeyPair) pemParser.readObject();
+            pemParser.close();
+            br.close();
+
+            JcaPEMKeyConverter jcaPEMKeyConverter = new JcaPEMKeyConverter();
+            return jcaPEMKeyConverter.getPrivateKey(privateKeyInfo);
+        } catch (Exception e) {
+            throw new AisClientException("Failed to initialize the client private key", e);
         }
-        PEMEncryptedKeyPair encryptedKeyPair = (PEMEncryptedKeyPair) pemParser.readObject();
-        PEMDecryptorProvider decryptorProvider = new JcePEMDecryptorProviderBuilder().setProvider("BC").build(keyPassword.toCharArray());
-        return encryptedKeyPair.decryptKeyPair(decryptorProvider);
     }
 
     private PrivateKeyStrategy producePrivateKeyStrategy() {

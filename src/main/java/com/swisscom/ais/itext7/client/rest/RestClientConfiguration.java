@@ -105,16 +105,16 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
     @Override
     protected RestClientConfiguration.Builder fromConfigurationProvider(ConfigurationProvider provider) {
         return builder()
-            .withServiceSignUrl(extractStringProperty(provider, "server.rest.signUrl"))
-            .withServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl"))
-            .withClientKeyFile(extractStringProperty(provider, "client.auth.keyFile"))
-            .withClientKeyPassword(extractSecretProperty(provider, "client.auth.keyPassword"))
-            .withClientCertificateFile(extractStringProperty(provider, "client.cert.file"))
-            .withServerCertificateFile(extractStringProperty(provider, "server.cert.file"))
-            .withMaxTotalConnections(extractIntProperty(provider, "client.http.maxTotalConnections"))
-            .withMaxConnectionsPerRoute(extractIntProperty(provider, "client.http.maxConnectionsPerRoute"))
-            .withConnectionTimeoutInSec(extractIntProperty(provider, "client.http.connectionTimeoutInSeconds"))
-            .withResponseTimeoutInSec(extractIntProperty(provider, "client.http.responseTimeoutInSeconds"));
+            .withServiceSignUrl(extractStringProperty(provider, "server.rest.signUrl", true))
+            .withServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl", true))
+            .withClientKeyFile(extractStringProperty(provider, "client.auth.keyFile", true))
+            .withClientKeyPassword(extractSecretProperty(provider, "client.auth.keyPassword", false))
+            .withClientCertificateFile(extractStringProperty(provider, "client.cert.file", true))
+            .withServerCertificateFile(extractStringProperty(provider, "server.cert.file", true))
+            .withMaxTotalConnections(extractIntProperty(provider, "client.http.maxTotalConnections", true))
+            .withMaxConnectionsPerRoute(extractIntProperty(provider, "client.http.maxConnectionsPerRoute", true))
+            .withConnectionTimeoutInSec(extractIntProperty(provider, "client.http.connectionTimeoutInSeconds", true))
+            .withResponseTimeoutInSec(extractIntProperty(provider, "client.http.responseTimeoutInSeconds", true));
     }
 
     private void validate() {
