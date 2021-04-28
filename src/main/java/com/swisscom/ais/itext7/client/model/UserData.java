@@ -143,13 +143,13 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
     @Override
     protected UserData.Builder fromConfigurationProvider(ConfigurationProvider provider) {
         return builder()
-            .withClaimedIdentityName(extractStringProperty(provider, "signature.claimedIdentityName"))
+            .withClaimedIdentityName(extractStringProperty(provider, "signature.claimedIdentityName", true))
             .withClaimedIdentityKey(provider.getProperty("signature.claimedIdentityKey"))
             .withStepUpLanguage(provider.getProperty("signature.stepUp.language"))
             .withStepUpMsisdn(provider.getProperty("signature.stepUp.msisdn"))
             .withStepUpMessage(provider.getProperty("signature.stepUp.message"))
             .withStepUpSerialNumber(provider.getProperty("signature.stepUp.serialNumber"))
-            .withDistinguishedName(extractStringProperty(provider, "signature.distinguishedName"))
+            .withDistinguishedName(extractStringProperty(provider, "signature.distinguishedName", true))
             .withSignatureName(provider.getProperty("signature.name"))
             .withSignatureReason(provider.getProperty("signature.reason"))
             .withSignatureLocation(provider.getProperty("signature.location"))
@@ -181,6 +181,7 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
         private String transactionId = IdGenerator.generateId();
 

@@ -23,6 +23,8 @@ run.sh
 AIS-Client-Prod-IAM_2014-2017*
 mycert-preprod*
 *~*
+target
+sign-pdf.properties
 
 # IDE #
 ###################

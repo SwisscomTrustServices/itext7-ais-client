@@ -56,9 +56,9 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
     @Override
     protected AisClientConfiguration.Builder fromConfigurationProvider(ConfigurationProvider provider) {
         return builder()
-            .withSignaturePollingIntervalInSeconds(extractIntProperty(provider, "client.poll.intervalInSeconds"))
-            .withSignaturePollingRounds(extractIntProperty(provider, "client.poll.rounds"))
-            .withLicenseFilePath(extractSecretProperty(provider, "license.file"));
+            .withSignaturePollingIntervalInSeconds(extractIntProperty(provider, "client.poll.intervalInSeconds", true))
+            .withSignaturePollingRounds(extractIntProperty(provider, "client.poll.rounds", true))
+            .withLicenseFilePath(extractSecretProperty(provider, "license.file", false));
     }
 
     private void validate() {
@@ -66,7 +66,6 @@ public class AisClientConfiguration extends PropertiesLoader<AisClientConfigurat
                                 "The signaturePollingIntervalInSeconds parameter of the AIS client configuration must be between 1 and 300 seconds");
         ValidationUtils.between(signaturePollingIntervalInSeconds, 1, 100,
                                 "The signaturePollingRounds parameter of the AIS client configuration must be between 1 and 100 seconds");
-        ValidationUtils.notBlank(licenseFilePath, "The iText license file path can not be blank.");
     }
 
     public static class Builder {
