@@ -99,7 +99,9 @@ public class SignatureRestClientImpl implements SignatureRestClient {
         try {
             SSLContextBuilder sslContextBuilder = SSLContexts.custom()
                 .loadKeyMaterial(produceTheKeyStore(config), keyToCharArray(config.getClientKeyPassword()), producePrivateKeyStrategy());
-            sslContextBuilder.loadTrustMaterial(produceTheTrustStore(config), null);
+            if (StringUtils.isNotBlank(config.getServerCertificateFile())) {
+                sslContextBuilder.loadTrustMaterial(produceTheTrustStore(config.getServerCertificateFile()), null);
+            }
             sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContextBuilder.build());
         } catch (Exception e) {
             throw new AisClientException("Failed to configure the TLS/SSL connection factory for the AIS client", e);
@@ -231,8 +233,8 @@ public class SignatureRestClientImpl implements SignatureRestClient {
         }
     }
 
-    private KeyStore produceTheTrustStore(RestClientConfiguration config) {
-        try (FileInputStream is = new FileInputStream(config.getServerCertificateFile())) {
+    private KeyStore produceTheTrustStore(String serverCertificateFile) {
+        try (FileInputStream is = new FileInputStream(serverCertificateFile)) {
             CertificateFactory fact = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) fact.generateCertificate(is);
 
