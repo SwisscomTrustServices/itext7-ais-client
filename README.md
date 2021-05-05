@@ -67,6 +67,7 @@ Once you add the AIS client library as a dependency to your project, you can con
     RestClientConfiguration restConfig = RestClientConfiguration.builder()
         .withServiceSignUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/sign")
         .withServicePendingUrl("https://ais.swisscom.com/AIS-Server/rs/v1.0/pending")
+        // the server certificate file is optional, in case it is omitted the CA must be a trusted one
         .withServerCertificateFile("/home/user/ais-server.crt")
         .withClientKeyFile("/home/user/ais-client.key")
         .withClientKeyPassword("secret")
