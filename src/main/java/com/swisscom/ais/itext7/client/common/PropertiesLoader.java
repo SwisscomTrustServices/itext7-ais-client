@@ -22,22 +22,16 @@ import com.swisscom.ais.itext7.client.utils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public abstract class PropertiesLoader<T> {
 
     private static final String ENV_VARIABLE_PREFIX = "${";
     private static final String ENV_VARIABLE_SUFFIX = "}";
 
     protected PropertiesLoader() {
-    }
-
-    private static void validateProperty(String propertyName, String propertyValue) {
-        if (StringUtils.isBlank(propertyValue)) {
-            throw new IllegalStateException(String.format("Invalid configuration. The [%s] property is missing or is empty.", propertyName));
-        }
     }
 
     protected abstract T fromConfigurationProvider(ConfigurationProvider provider);
@@ -64,24 +58,18 @@ public abstract class PropertiesLoader<T> {
         }
     }
 
-    public String extractStringProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
-        return extractProperty(provider, propertyName, mandatory);
+    public String extractStringProperty(ConfigurationProvider provider, String propertyName, boolean isMandatory) {
+        return extractProperty(provider, propertyName, isMandatory).orElse(null);
     }
 
-    public Integer extractIntProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
-        String property = extractProperty(provider, propertyName, mandatory);
-        if (property == null && !mandatory) {
-            return null;
-        }
-        return Integer.parseInt(property);
+    public Integer extractIntProperty(ConfigurationProvider provider, String propertyName, boolean isMandatory) {
+        Optional<String> property = extractProperty(provider, propertyName, isMandatory);
+        return property.isPresent() ? Integer.parseInt(property.get()) : null;
     }
 
-    public String extractSecretProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
-        String property = extractProperty(provider, propertyName, mandatory);
-        if (property == null && !mandatory) {
-            return null;
-        }
-        return shouldExtractFromEnvVariable(property) ? System.getenv(extractEnvPropertyName(property)) : property;
+    public String extractSecretProperty(ConfigurationProvider provider, String propertyName, boolean isMandatory) {
+        Optional<String> property = extractProperty(provider, propertyName, isMandatory);
+        return property.isPresent() && shouldExtractFromEnvVariable(property.get()) ? System.getenv(extractEnvPropertyName(property.get())) : null;
     }
 
     private boolean shouldExtractFromEnvVariable(String property) {
@@ -97,12 +85,14 @@ public abstract class PropertiesLoader<T> {
         return StringUtils.isNotBlank(propertyValue) ? mapperFunction.apply(propertyValue) : defaultValue;
     }
 
-    private String extractProperty(ConfigurationProvider provider, String propertyName, boolean mandatory) {
+    private Optional<String> extractProperty(ConfigurationProvider provider, String propertyName, boolean isMandatory) {
         String propertyValue = provider.getProperty(propertyName);
-        if (StringUtils.isBlank(propertyValue) && !mandatory) {
-            return null;
+        if (StringUtils.isBlank(propertyValue) && !isMandatory) {
+            return Optional.empty();
         }
-        validateProperty(propertyName, propertyValue);
-        return propertyValue;
+        if (StringUtils.isBlank(propertyValue)) {
+            throw new IllegalStateException(String.format("Invalid configuration. The [%s] property is missing or is empty.", propertyName));
+        }
+        return Optional.of(propertyValue);
     }
 }
