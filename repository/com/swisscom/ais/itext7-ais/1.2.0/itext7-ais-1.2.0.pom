@@ -6,7 +6,7 @@
 
     <groupId>com.swisscom.ais</groupId>
     <artifactId>itext7-ais</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
     <name>itext7-ais</name>
 
