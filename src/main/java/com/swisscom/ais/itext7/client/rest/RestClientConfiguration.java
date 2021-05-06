@@ -110,7 +110,7 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
             .withClientKeyFile(extractStringProperty(provider, "client.auth.keyFile", true))
             .withClientKeyPassword(extractSecretProperty(provider, "client.auth.keyPassword", false))
             .withClientCertificateFile(extractStringProperty(provider, "client.cert.file", true))
-            .withServerCertificateFile(extractStringProperty(provider, "server.cert.file", true))
+            .withServerCertificateFile(extractStringProperty(provider, "server.cert.file", false))
             .withMaxTotalConnections(extractIntProperty(provider, "client.http.maxTotalConnections", true))
             .withMaxConnectionsPerRoute(extractIntProperty(provider, "client.http.maxConnectionsPerRoute", true))
             .withConnectionTimeoutInSec(extractIntProperty(provider, "client.http.connectionTimeoutInSeconds", true))
@@ -122,7 +122,6 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
         ValidationUtils.notBlank(servicePendingUrl, "The servicePendingUrl parameter of the REST client configuration must not be empty");
         ValidationUtils.notBlank(clientKeyFile, "The clientKeyFile parameter of the REST client configuration must not be empty");
         ValidationUtils.notBlank(clientCertificateFile, "The clientCertificateFile parameter of the REST client configuration must not be empty");
-        ValidationUtils.notBlank(serverCertificateFile, "The serverCertificateFile parameter of the REST client configuration must not be empty");
         ValidationUtils.isPositive(maxTotalConnections, "The maxTotalConnections parameter of the REST client configuration must not be empty");
         ValidationUtils.isPositive(maxConnectionsPerRoute, "The maxConnectionsPerRoute parameter of the REST client configuration must not be empty");
         ValidationUtils.isPositive(connectionTimeoutInSec, "The connectionTimeoutInSec parameter of the REST client configuration must not be empty");
