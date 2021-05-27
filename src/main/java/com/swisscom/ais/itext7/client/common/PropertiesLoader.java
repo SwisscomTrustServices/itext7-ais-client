@@ -69,7 +69,15 @@ public abstract class PropertiesLoader<T> {
 
     public String extractSecretProperty(ConfigurationProvider provider, String propertyName, boolean isMandatory) {
         Optional<String> property = extractProperty(provider, propertyName, isMandatory);
-        return property.isPresent() && shouldExtractFromEnvVariable(property.get()) ? System.getenv(extractEnvPropertyName(property.get())) : null;
+        if (property.isPresent()) {
+            if (shouldExtractFromEnvVariable(property.get())) {
+                return System.getenv(extractEnvPropertyName(property.get()));
+            } else {
+                return property.get();
+            }
+        } else {
+            return null;
+        }
     }
 
     private boolean shouldExtractFromEnvVariable(String property) {
