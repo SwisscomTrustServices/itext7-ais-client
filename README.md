@@ -6,7 +6,7 @@ It relies on the [iText](https://itextpdf.com/en) library for PDF processing.
 
 ## Demo Video
 
-[![Watch the video](https://i.imgur.com/1DduWvd.png)](https://youtu.be/xFq1hXrTHkY?t=61)
+[![Watch the video](https://i.imgur.com/1DduWvd.png)](https://youtu.be/xFq1hXrTHkY?)
 
 See it also on SharePoint
 * https://swisscom-my.sharepoint.com/:v:/p/paul_muntean/EVx1PH7CcWxCrReIFIb1Ax4BukjpKN0M-EwauAvtgfDgaw?e=lukdMQ
