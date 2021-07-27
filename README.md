@@ -6,23 +6,10 @@ It relies on the [iText](https://itextpdf.com/en) library for PDF processing.
 
 ## Demo Video
 
+[![Watch the video](https://i.imgur.com/1DduWvd.png)](https://youtu.be/xFq1hXrTHkY?t=61)
+
+See it also on SharePoint
 * https://swisscom-my.sharepoint.com/:v:/p/paul_muntean/EVx1PH7CcWxCrReIFIb1Ax4BukjpKN0M-EwauAvtgfDgaw?e=lukdMQ
-
-or alternativelly if you cannot access the first link, you need to download the raw video file using the following link.
-
-* https://github.com/SwisscomTrustServices/itext7-ais/blob/main/iText7%20client%20demo.mp4
-* 
-https://user-images.githubusercontent.com/itext7-ais/blob/main/iText7%20client%20demo.mp4
-
-<object width="425" height="350">
-  <param name="movie" value="http://www.youtube.com/user/wwwLoveWatercom?v=BTRN1YETpyg" />
-  <param name="wmode" value="transparent" />
-  <embed src="http://www.youtube.com/user/wwwLoveWatercom?v=BTRN1YETpyg"
-         type="application/x-shockwave-flash"
-         wmode="transparent" width="425" height="350" />
-</object>
-
-
 
 ## Getting started
 
