@@ -4,6 +4,14 @@ A Java client library for using the [Swisscom All-in Signing Service (AIS)](http
 to sign and/or timestamp PDF documents. The library can be used either as a project dependency or as a command-line tool for batch operations.
 It relies on the [iText](https://itextpdf.com/en) library for PDF processing.
 
+## Demo Video
+
+* https://swisscom-my.sharepoint.com/:v:/p/paul_muntean/EVx1PH7CcWxCrReIFIb1Ax4BukjpKN0M-EwauAvtgfDgaw?e=lukdMQ
+
+or alternativelly if you cannot access the first link, you need to download the raw video file using the following link.
+
+* https://github.com/SwisscomTrustServices/itext7-ais/blob/main/iText7%20client%20demo.mp4
+
 ## Getting started
 
 To start using the Swisscom AIS service and this client library, do the following:
