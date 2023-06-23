@@ -24,8 +24,7 @@ import com.swisscom.ais.itext7.client.model.UserData;
 import com.swisscom.ais.itext7.client.rest.model.AdditionalProfile;
 import com.swisscom.ais.itext7.client.rest.model.pendingreq.AISPendingRequest;
 import com.swisscom.ais.itext7.client.rest.model.pendingreq.AsyncPendingRequest;
-import com.swisscom.ais.itext7.client.rest.model.signreq.*;
-import com.swisscom.ais.itext7.client.utils.IdGenerator;
+import com.swisscom.ais.itext7.client.rest.model.signreq.dss.*;
 
 import org.apache.commons.lang3.StringUtils;
 

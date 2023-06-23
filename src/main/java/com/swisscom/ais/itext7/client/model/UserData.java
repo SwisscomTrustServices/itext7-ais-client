@@ -23,8 +23,7 @@ import com.swisscom.ais.itext7.client.utils.ValidationUtils;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class UserData extends PropertiesLoader<UserData.Builder> {
-    private String transactionId;
+public class UserData extends AbstractUserData<UserData.Builder> {
 
     private String claimedIdentityName;
     private String claimedIdentityKey;
@@ -35,18 +34,13 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
     private String stepUpMessage;
     private String stepUpSerialNumber;
 
-    private String signatureName;
-    private String signatureReason;
-    private String signatureLocation;
-    private String signatureContactInfo;
-
-    private ConsentUrlCallback consentUrlCallback;
 
     private boolean addTimestamp;
     private RevocationInformation revocationInformation;
     private SignatureStandard signatureStandard;
 
     public UserData() {
+        super();
     }
 
     public UserData(String transactionId, String claimedIdentityName, String claimedIdentityKey, String distinguishedName,
@@ -54,7 +48,10 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
                     String signatureReason, String signatureLocation, String signatureContactInfo,
                     ConsentUrlCallback consentUrlCallback, boolean addTimestamp,
                     RevocationInformation revocationInformation, SignatureStandard signatureStandard) {
-        this.transactionId = transactionId;
+        super(signatureName,
+                signatureReason,
+                signatureLocation,
+                signatureContactInfo, consentUrlCallback, transactionId);
         this.claimedIdentityName = claimedIdentityName;
         this.claimedIdentityKey = claimedIdentityKey;
         this.distinguishedName = distinguishedName;
@@ -62,11 +59,7 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
         this.stepUpMsisdn = stepUpMsisdn;
         this.stepUpMessage = stepUpMessage;
         this.stepUpSerialNumber = stepUpSerialNumber;
-        this.signatureName = signatureName;
-        this.signatureReason = signatureReason;
-        this.signatureLocation = signatureLocation;
-        this.signatureContactInfo = signatureContactInfo;
-        this.consentUrlCallback = consentUrlCallback;
+
         this.addTimestamp = addTimestamp;
         this.revocationInformation = revocationInformation;
         this.signatureStandard = signatureStandard;
@@ -74,10 +67,6 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
 
     public static UserData.Builder builder() {
         return new Builder();
-    }
-
-    public String getTransactionId() {
-        return transactionId;
     }
 
     public String getClaimedIdentityName() {
@@ -124,47 +113,31 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
         return stepUpSerialNumber;
     }
 
-    public String getSignatureName() {
-        return signatureName;
-    }
-
-    public String getSignatureReason() {
-        return signatureReason;
-    }
-
-    public String getSignatureLocation() {
-        return signatureLocation;
-    }
-
-    public String getSignatureContactInfo() {
-        return signatureContactInfo;
-    }
-
     @Override
     protected UserData.Builder fromConfigurationProvider(ConfigurationProvider provider) {
         return builder()
-            .withClaimedIdentityName(extractStringProperty(provider, "signature.claimedIdentityName", true))
-            .withClaimedIdentityKey(provider.getProperty("signature.claimedIdentityKey"))
-            .withStepUpLanguage(provider.getProperty("signature.stepUp.language"))
-            .withStepUpMsisdn(provider.getProperty("signature.stepUp.msisdn"))
-            .withStepUpMessage(provider.getProperty("signature.stepUp.message"))
-            .withStepUpSerialNumber(provider.getProperty("signature.stepUp.serialNumber"))
-            .withDistinguishedName(extractStringProperty(provider, "signature.distinguishedName", true))
-            .withSignatureName(provider.getProperty("signature.name"))
-            .withSignatureReason(provider.getProperty("signature.reason"))
-            .withSignatureLocation(provider.getProperty("signature.location"))
-            .withSignatureContactInfo(provider.getProperty("signature.contactInfo"))
-            .withSignatureStandard(extractProperty(provider, "signature.standard", SignatureStandard::getByValue, SignatureStandard.DEFAULT))
-            .withRevocationInformation(extractProperty(provider, "signature.revocationInformation", RevocationInformation::getByValue,
-                                                       RevocationInformation.DEFAULT))
-            .withTimestamp(extractProperty(provider, "signature.addTimestamp", Boolean::parseBoolean, Boolean.TRUE));
+                .withClaimedIdentityName(extractStringProperty(provider, "signature.claimedIdentityName", true))
+                .withClaimedIdentityKey(provider.getProperty("signature.claimedIdentityKey"))
+                .withStepUpLanguage(provider.getProperty("signature.stepUp.language"))
+                .withStepUpMsisdn(provider.getProperty("signature.stepUp.msisdn"))
+                .withStepUpMessage(provider.getProperty("signature.stepUp.message"))
+                .withStepUpSerialNumber(provider.getProperty("signature.stepUp.serialNumber"))
+                .withDistinguishedName(extractStringProperty(provider, "signature.distinguishedName", true))
+                .withSignatureName(provider.getProperty("signature.name"))
+                .withSignatureReason(provider.getProperty("signature.reason"))
+                .withSignatureLocation(provider.getProperty("signature.location"))
+                .withSignatureContactInfo(provider.getProperty("signature.contactInfo"))
+                .withSignatureStandard(extractProperty(provider, "signature.standard", SignatureStandard::getByValue, SignatureStandard.DEFAULT))
+                .withRevocationInformation(extractProperty(provider, "signature.revocationInformation", RevocationInformation::getByValue,
+                        RevocationInformation.DEFAULT))
+                .withTimestamp(extractProperty(provider, "signature.addTimestamp", Boolean::parseBoolean, Boolean.TRUE));
     }
 
     public void validatePropertiesForSignature(SignatureMode signatureMode, Trace trace) {
         if (StringUtils.isBlank(transactionId)) {
             throw new AisClientException(String.format("The user data's transactionId cannot be null or empty. For example, you can set it to a new "
-                                                       + "UUID or to any other value that is unique between requests. This helps with traceability "
-                                                       + "in the logs generated by the AIS client. - %s", trace.getId()));
+                    + "UUID or to any other value that is unique between requests. This helps with traceability "
+                    + "in the logs generated by the AIS client. - %s", trace.getId()));
         }
         ValidationUtils.notNull(claimedIdentityName, "The claimedIdentityName must be provided", trace);
         switch (signatureMode) {
@@ -174,7 +147,7 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
                 break;
             case ON_DEMAND_WITH_STEP_UP:
                 ValidationUtils.allNotNull("The stepUpLanguage, stepUpMessage and stepUpMsisdn must be provided", trace,
-                                           stepUpLanguage, stepUpMessage, stepUpMsisdn);
+                        stepUpLanguage, stepUpMessage, stepUpMsisdn);
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Invalid signature mode: %s - %s", signatureMode, trace.getId()));
@@ -290,30 +263,30 @@ public class UserData extends PropertiesLoader<UserData.Builder> {
 
         public UserData build() {
             return new UserData(transactionId, claimedIdentityName, claimedIdentityKey, distinguishedName, stepUpLanguage, stepUpMsisdn,
-                                stepUpMessage, stepUpSerialNumber, signatureName, signatureReason, signatureLocation,
-                                signatureContactInfo, consentUrlCallback, addTimestamp, revocationInformation, signatureStandard);
+                    stepUpMessage, stepUpSerialNumber, signatureName, signatureReason, signatureLocation,
+                    signatureContactInfo, consentUrlCallback, addTimestamp, revocationInformation, signatureStandard);
         }
 
         @Override
         public String toString() {
             return "UserData.Builder{" +
-                   "transactionId='" + transactionId + '\'' +
-                   ", claimedIdentityName='" + claimedIdentityName + '\'' +
-                   ", claimedIdentityKey='" + claimedIdentityKey + '\'' +
-                   ", distinguishedName='" + distinguishedName + '\'' +
-                   ", stepUpLanguage='" + stepUpLanguage + '\'' +
-                   ", stepUpMsisdn='" + stepUpMsisdn + '\'' +
-                   ", stepUpMessage='" + stepUpMessage + '\'' +
-                   ", stepUpSerialNumber='" + stepUpSerialNumber + '\'' +
-                   ", signatureName='" + signatureName + '\'' +
-                   ", signatureReason='" + signatureReason + '\'' +
-                   ", signatureLocation='" + signatureLocation + '\'' +
-                   ", signatureContactInfo='" + signatureContactInfo + '\'' +
-                   ", consentUrlCallback=" + consentUrlCallback +
-                   ", addTimestamp=" + addTimestamp +
-                   ", revocationInformation=" + revocationInformation +
-                   ", signatureStandard=" + signatureStandard +
-                   '}';
+                    "transactionId='" + transactionId + '\'' +
+                    ", claimedIdentityName='" + claimedIdentityName + '\'' +
+                    ", claimedIdentityKey='" + claimedIdentityKey + '\'' +
+                    ", distinguishedName='" + distinguishedName + '\'' +
+                    ", stepUpLanguage='" + stepUpLanguage + '\'' +
+                    ", stepUpMsisdn='" + stepUpMsisdn + '\'' +
+                    ", stepUpMessage='" + stepUpMessage + '\'' +
+                    ", stepUpSerialNumber='" + stepUpSerialNumber + '\'' +
+                    ", signatureName='" + signatureName + '\'' +
+                    ", signatureReason='" + signatureReason + '\'' +
+                    ", signatureLocation='" + signatureLocation + '\'' +
+                    ", signatureContactInfo='" + signatureContactInfo + '\'' +
+                    ", consentUrlCallback=" + consentUrlCallback +
+                    ", addTimestamp=" + addTimestamp +
+                    ", revocationInformation=" + revocationInformation +
+                    ", signatureStandard=" + signatureStandard +
+                    '}';
         }
     }
 }

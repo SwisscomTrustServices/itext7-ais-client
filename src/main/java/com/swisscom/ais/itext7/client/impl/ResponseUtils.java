@@ -17,7 +17,7 @@ package com.swisscom.ais.itext7.client.impl;
 
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.rest.model.ResultMajorCode;
-import com.swisscom.ais.itext7.client.rest.model.signresp.*;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.*;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
 
 import java.util.Collections;

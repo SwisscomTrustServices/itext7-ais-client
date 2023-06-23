@@ -106,7 +106,7 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
     protected RestClientConfiguration.Builder fromConfigurationProvider(ConfigurationProvider provider) {
         return builder()
             .withServiceSignUrl(extractStringProperty(provider, "server.rest.signUrl", true))
-            .withServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl", true))
+            .withServicePendingUrl(extractStringProperty(provider, "server.rest.pendingUrl", false))
             .withClientKeyFile(extractStringProperty(provider, "client.auth.keyFile", true))
             .withClientKeyPassword(extractSecretProperty(provider, "client.auth.keyPassword", false))
             .withClientCertificateFile(extractStringProperty(provider, "client.cert.file", true))
@@ -119,7 +119,6 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
 
     private void validate() {
         ValidationUtils.notBlank(serviceSignUrl, "The serviceSignUrl parameter of the REST client configuration must not be empty");
-        ValidationUtils.notBlank(servicePendingUrl, "The servicePendingUrl parameter of the REST client configuration must not be empty");
         ValidationUtils.notBlank(clientKeyFile, "The clientKeyFile parameter of the REST client configuration must not be empty");
         ValidationUtils.notBlank(clientCertificateFile, "The clientCertificateFile parameter of the REST client configuration must not be empty");
         ValidationUtils.isPositive(maxTotalConnections, "The maxTotalConnections parameter of the REST client configuration must not be empty");

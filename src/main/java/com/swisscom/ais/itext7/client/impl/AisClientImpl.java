@@ -33,13 +33,14 @@ import com.swisscom.ais.itext7.client.rest.model.ResultMajorCode;
 import com.swisscom.ais.itext7.client.rest.model.ResultMessageCode;
 import com.swisscom.ais.itext7.client.rest.model.ResultMinorCode;
 import com.swisscom.ais.itext7.client.rest.model.pendingreq.AISPendingRequest;
-import com.swisscom.ais.itext7.client.rest.model.signreq.AISSignRequest;
-import com.swisscom.ais.itext7.client.rest.model.signresp.AISSignResponse;
-import com.swisscom.ais.itext7.client.rest.model.signresp.Result;
-import com.swisscom.ais.itext7.client.rest.model.signresp.ScExtendedSignatureObject;
-import com.swisscom.ais.itext7.client.rest.model.signresp.SignResponse;
-import com.swisscom.ais.itext7.client.rest.model.signresp.SignatureObject;
+import com.swisscom.ais.itext7.client.rest.model.signreq.dss.AISSignRequest;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.AISSignResponse;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.Result;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.ScExtendedSignatureObject;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.SignResponse;
+import com.swisscom.ais.itext7.client.rest.model.signresp.dss.SignatureObject;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
+import com.swisscom.ais.itext7.client.utils.DocumentUtils;
 import com.swisscom.ais.itext7.client.utils.RequestUtils;
 
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Provides implementation for different PDF signature types, as described in the {@link AisClient} contract.
@@ -92,20 +92,20 @@ public class AisClientImpl implements AisClient {
     @Override
     public SignatureResult signWithOnDemandCertificate(List<PdfMetadata> documentsMetadata, UserData userData) {
         return performSigning(SignatureMode.ON_DEMAND, SignatureType.CMS, documentsMetadata, userData,
-                              Collections.singletonList(AdditionalProfile.ON_DEMAND_CERTIFICATE), false, true);
+                Collections.singletonList(AdditionalProfile.ON_DEMAND_CERTIFICATE), false, true);
     }
 
     @Override
     public SignatureResult signWithOnDemandCertificateAndStepUp(List<PdfMetadata> documentsMetadata, UserData userData) {
         return performSigning(SignatureMode.ON_DEMAND_WITH_STEP_UP, SignatureType.CMS, documentsMetadata, userData,
-                              Arrays.asList(AdditionalProfile.ON_DEMAND_CERTIFICATE, AdditionalProfile.REDIRECT, AdditionalProfile.ASYNC),
-                              true, true);
+                Arrays.asList(AdditionalProfile.ON_DEMAND_CERTIFICATE, AdditionalProfile.REDIRECT, AdditionalProfile.ASYNC),
+                true, true);
     }
 
     @Override
     public SignatureResult signWithTimestamp(List<PdfMetadata> documentsMetadata, UserData userData) {
         return performSigning(SignatureMode.TIMESTAMP, SignatureType.TIMESTAMP, documentsMetadata, userData,
-                              Collections.singletonList(AdditionalProfile.TIMESTAMP), false, false);
+                Collections.singletonList(AdditionalProfile.TIMESTAMP), false, false);
     }
 
     private SignatureResult performSigning(SignatureMode signatureMode, SignatureType signatureType, List<PdfMetadata> documentsMetadata,
@@ -115,12 +115,12 @@ public class AisClientImpl implements AisClient {
         userData.validatePropertiesForSignature(signatureMode, trace);
         documentsMetadata.forEach(docMetadata -> docMetadata.validate(trace));
 
-        List<PdfDocumentHandler> documents = prepareMultipleDocumentsForSigning(documentsMetadata, signatureMode, signatureType, userData, trace);
+        List<PdfDocumentHandler> documents = DocumentUtils.prepareMultipleDocumentsForSigning(documentsMetadata, signatureMode, signatureType, userData, trace, clientLogger);
 
         try {
             List<AdditionalProfile> additionalProfiles = prepareAdditionalProfiles(profiles, documents);
             AISSignRequest signRequest = RequestUtils.buildAisSignRequest(documents, signatureMode, signatureType, userData, additionalProfiles,
-                                                                          signWithStepUp, signWithCertificateRequest);
+                    signWithStepUp, signWithCertificateRequest);
             AISSignResponse signResponse = restClient.requestSignature(signRequest, trace);
 
             if (signWithStepUp && !ResponseUtils.isResponseAsyncPending(signResponse)) {
@@ -149,25 +149,6 @@ public class AisClientImpl implements AisClient {
         return restClient;
     }
 
-    private List<PdfDocumentHandler> prepareMultipleDocumentsForSigning(List<PdfMetadata> documentsMetadata, SignatureMode signatureMode,
-                                                                        SignatureType signatureType, UserData userData, Trace trace) {
-        clientLogger.info("Preparing document(s) for signing with {} signature... - {}", signatureMode.getValue(), trace.getId());
-        return documentsMetadata.stream()
-            .map(docMetadata -> prepareOneDocumentForSigning(docMetadata, signatureMode, signatureType, userData, trace))
-            .collect(Collectors.toList());
-    }
-
-    private PdfDocumentHandler prepareOneDocumentForSigning(PdfMetadata documentMetadata, SignatureMode signatureMode, SignatureType signatureType,
-                                                            UserData userData, Trace trace) {
-        try {
-            PdfDocumentHandler newDocument = new PdfDocumentHandler(documentMetadata.getInputStream(), documentMetadata.getOutputStream(), trace);
-            newDocument.prepareForSigning(documentMetadata.getDigestAlgorithm(), signatureType, userData);
-            return newDocument;
-        } catch (Exception e) {
-            throw new AisClientException(String.format("Failed to prepare the document for %s signing - %s",
-                                                       signatureMode.getValue(), trace.getId()), e);
-        }
-    }
 
     private List<AdditionalProfile> prepareAdditionalProfiles(List<AdditionalProfile> defaultProfiles, List<PdfDocumentHandler> documents) {
         List<AdditionalProfile> profiles = Objects.nonNull(defaultProfiles) ? new ArrayList<>(defaultProfiles) : new ArrayList<>();
@@ -187,7 +168,7 @@ public class AisClientImpl implements AisClient {
 
         if (Objects.isNull(majorCode)) {
             throw new AisClientException(String.format("Failure response received from AIS service: %s - %s",
-                                                       ResponseUtils.getResponseResultSummary(response), trace.getId()));
+                    ResponseUtils.getResponseResultSummary(response), trace.getId()));
         }
 
         switch (majorCode) {
@@ -208,7 +189,7 @@ public class AisClientImpl implements AisClient {
         }
 
         throw new AisClientException(String.format("Failure response received from AIS service: %s - %s",
-                                                   ResponseUtils.getResponseResultSummary(response), trace.getId()));
+                ResponseUtils.getResponseResultSummary(response), trace.getId()));
     }
 
     private Optional<SignatureResult> extractSignatureResultFromMinorCode(ResultMinorCode minorCode, Result responseResult) {
@@ -225,8 +206,8 @@ public class AisClientImpl implements AisClient {
             case INSUFFICIENT_DATA:
                 if (responseResult.getResultMessage().get$().contains(MISSING_MSISDN_MESSAGE)) {
                     clientLogger.error("The required MSISDN parameter was missing in the request. This can happen sometimes in the context of the"
-                                       + " on-demand flow, depending on the user's server configuration. As an alternative, the on-demand with"
-                                       + " step-up flow can be used instead.");
+                            + " on-demand flow, depending on the user's server configuration. As an alternative, the on-demand with"
+                            + " step-up flow can be used instead.");
                     return Optional.of(SignatureResult.INSUFFICIENT_DATA_WITH_ABSENT_MSISDN);
                 }
                 break;
@@ -254,7 +235,7 @@ public class AisClientImpl implements AisClient {
             }
             for (int round = 0; round < configuration.getSignaturePollingRounds(); round++) {
                 protocolLogger.debug("Polling for signature status, round {}/{} - {}", round + 1, configuration.getSignaturePollingRounds(),
-                                     trace.getId());
+                        trace.getId());
                 AISPendingRequest pendingRequest = RequestUtils.buildAisPendingRequest(ResponseUtils.extractResponseId(localResponse), userData);
                 localResponse = restClient.pollForSignatureStatus(pendingRequest, trace);
                 checkForConsentUrlInTheResponse(localResponse, userData, trace);
@@ -276,7 +257,7 @@ public class AisClientImpl implements AisClient {
                 userData.getConsentUrlCallback().onConsentUrlReceived(ResponseUtils.extractStepUpConsentUrl(response), userData);
             } else {
                 clientLogger.warn("Consent URL was received from AIS, but no consent URL callback was configured (in UserData). This transaction "
-                                  + " will probably fail - {}", trace.getId());
+                        + " will probably fail - {}", trace.getId());
             }
             return true;
         }
@@ -302,11 +283,11 @@ public class AisClientImpl implements AisClient {
         if (containsSingleDocument) {
             SignatureObject signatureObject = response.getSignResponse().getSignatureObject();
             return signatureMode.equals(SignatureMode.TIMESTAMP) ? signatureObject.getTimestamp().getRFC3161TimeStampToken()
-                                                                 : signatureObject.getBase64Signature().get$();
+                    : signatureObject.getBase64Signature().get$();
         }
         ScExtendedSignatureObject signatureObject = ResponseUtils.extractEncodedSignatureByDocumentId(document.getId(), response);
         return signatureMode.equals(SignatureMode.TIMESTAMP) ? signatureObject.getTimestamp().getRFC3161TimeStampToken()
-                                                             : signatureObject.getBase64Signature().get$();
+                : signatureObject.getBase64Signature().get$();
     }
 
     @Override

@@ -28,7 +28,7 @@ import java.util.Arrays;
  */
 public enum SignatureMode {
 
-    TIMESTAMP("timestamp"), STATIC("static"), ON_DEMAND("ondemand"), ON_DEMAND_WITH_STEP_UP("ondemand-stepup");
+    TIMESTAMP("timestamp"), STATIC("static"), ON_DEMAND("ondemand"), ON_DEMAND_WITH_STEP_UP("ondemand-stepup"), ETSI("etsi");
 
     private final String value;
 

@@ -22,10 +22,7 @@ import com.itextpdf.signatures.PdfSigner;
 import com.itextpdf.signatures.SignatureUtil;
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.common.Loggers;
-import com.swisscom.ais.itext7.client.model.DigestAlgorithm;
-import com.swisscom.ais.itext7.client.model.SignatureType;
-import com.swisscom.ais.itext7.client.model.Trace;
-import com.swisscom.ais.itext7.client.model.UserData;
+import com.swisscom.ais.itext7.client.model.*;
 import com.swisscom.ais.itext7.client.utils.AisObjectUtils;
 import com.swisscom.ais.itext7.client.utils.IdGenerator;
 
@@ -80,7 +77,7 @@ public class PdfDocumentHandler implements Closeable {
     private byte[] documentHash;
     private DigestAlgorithm digestAlgorithm;
 
-    PdfDocumentHandler(InputStream inputStream, OutputStream outputStream, Trace trace) {
+    public PdfDocumentHandler(InputStream inputStream, OutputStream outputStream, Trace trace) {
         this.inputStream = inputStream;
         this.outputStream = outputStream;
         this.trace = trace;
@@ -93,7 +90,7 @@ public class PdfDocumentHandler implements Closeable {
      * @param signatureType signature type
      * @param userData      data used to fill the signature attributes
      */
-    public void prepareForSigning(DigestAlgorithm algorithm, SignatureType signatureType, UserData userData)
+    public void prepareForSigning(DigestAlgorithm algorithm, SignatureType signatureType, AbstractUserData userData)
         throws IOException, GeneralSecurityException {
 
         digestAlgorithm = algorithm;
