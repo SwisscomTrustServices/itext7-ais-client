@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7;
+package com.swisscom.ais.itext7.usage.dss;
 
 import com.swisscom.ais.itext7.client.model.SignatureMode;
 
 import java.util.Properties;
 
 /**
- * Test with an On Demand signature that shows how to access all the configuration available and load it from a
+ * Test with an Timestamp signature that shows how to access all the configuration available and load it from a
  * properties file. The same configuration can also be tweaked by hand or via some framework (e.g. Spring, Guice, etc).
  */
-public class TestOnDemandSignature extends SignatureTest {
+public class TestTimestampSignature extends SignatureTest {
 
     public static void main(String[] args) throws Exception {
         Properties properties = new Properties();
-        properties.load(TestOnDemandSignature.class.getResourceAsStream("/local-config.properties"));
+        properties.load(TestTimestampSignature.class.getResourceAsStream("/local-config.properties"));
 
-        sign(properties, SignatureMode.ON_DEMAND);
+        sign(properties, SignatureMode.TIMESTAMP);
     }
 }

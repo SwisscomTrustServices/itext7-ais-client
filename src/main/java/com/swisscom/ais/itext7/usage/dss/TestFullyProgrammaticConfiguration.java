@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7;
+package com.swisscom.ais.itext7.usage.dss;
 
 import com.swisscom.ais.itext7.client.AisClient;
 import com.swisscom.ais.itext7.client.config.AisClientConfiguration;

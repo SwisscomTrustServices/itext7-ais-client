@@ -1,4 +1,4 @@
-package com.swisscom.ais.itext7;
+package com.swisscom.ais.itext7.usage.etsi;
 
 import com.swisscom.ais.itext7.client.ETSIAisClient;
 import com.swisscom.ais.itext7.client.config.LogbackConfiguration;
@@ -8,8 +8,11 @@ import com.swisscom.ais.itext7.client.model.*;
 import com.swisscom.ais.itext7.client.rest.ETSIRestClient;
 import com.swisscom.ais.itext7.client.rest.ETSIRestClientImpl;
 import com.swisscom.ais.itext7.client.rest.RestClientConfiguration;
+import com.swisscom.ais.itext7.client.rest.model.RAXCodeUrlParameters;
 import com.swisscom.ais.itext7.client.utils.AuthenticationUtils;
 import com.swisscom.ais.itext7.client.utils.DocumentUtils;
+import com.swisscom.ais.itext7.usage.dss.SignatureTest;
+import com.swisscom.ais.itext7.usage.dss.TestOnDemandSignature;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,7 +41,7 @@ public class TestSignatureWithETSI extends SignatureTest {
         ETSIRestClient restClient = new ETSIRestClientImpl().withConfiguration(restConfig);
 
         try (ETSIAisClient client = new ETSIAisClientImpl(restClient, properties.getProperty("license.file"))) {
-            String codeFromConsole = AuthenticationUtils.getJWTFromConsole(properties, pdfDocumentHandler);
+            String codeFromConsole = AuthenticationUtils.getJWTFromConsole(new RAXCodeUrlParameters().fromProperties(properties), pdfDocumentHandler, true);
             client.signOnDemandWithETSI(pdfDocumentHandler, userData, trace, codeFromConsole);
         }
     }

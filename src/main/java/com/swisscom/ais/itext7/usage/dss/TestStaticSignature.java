@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.swisscom.ais.itext7;
+package com.swisscom.ais.itext7.usage.dss;
 
 import com.swisscom.ais.itext7.client.model.SignatureMode;
 
 import java.util.Properties;
 
 /**
- * Test with an On Demand signature with Step Up that shows how to access all the configuration available and load it from a
+ * Test with an Static signature that shows how to access all the configuration available and load it from a
  * properties file. The same configuration can also be tweaked by hand or via some framework (e.g. Spring, Guice, etc).
  */
-public class TestOnDemandSignatureWithStepUp extends SignatureTest {
+public class TestStaticSignature extends SignatureTest {
 
     public static void main(String[] args) throws Exception {
         Properties properties = new Properties();
-        properties.load(TestOnDemandSignatureWithStepUp.class.getResourceAsStream("/local-config.properties"));
+        properties.load(TestStaticSignature.class.getResourceAsStream("/local-config.properties"));
 
-        sign(properties, SignatureMode.ON_DEMAND_WITH_STEP_UP);
+        sign(properties, SignatureMode.STATIC);
     }
 }
