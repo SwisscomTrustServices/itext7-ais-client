@@ -16,8 +16,8 @@
         <buildTimestamp>${maven.build.timestamp}</buildTimestamp>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <itextpdf.version>7.1.14</itextpdf.version>
-        <bouncycastle.version>1.68</bouncycastle.version>
+        <itextpdf.version>8.0.0</itextpdf.version>
+        <bouncycastle.version>1.70</bouncycastle.version>
         <jackson-databind.version>2.12.2</jackson-databind.version>
         <jsr305.version>3.0.2</jsr305.version>
         <slf4j-api.version>1.7.30</slf4j-api.version>
@@ -67,6 +67,19 @@
             <artifactId>sign</artifactId>
             <version>${itextpdf.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>bouncy-castle-adapter</artifactId>
+            <version>${itextpdf.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext-licensekey</artifactId>

@@ -15,7 +15,7 @@
  */
 package com.swisscom.ais.itext7.client.impl;
 
-import com.itextpdf.kernel.PdfException;
+import com.itextpdf.kernel.exceptions.PdfException;
 import com.itextpdf.kernel.pdf.PdfDate;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
@@ -42,7 +42,7 @@ public class PdfDocumentSigner extends PdfSigner {
 
     public byte[] computeHash(IExternalSignatureContainer externalHashContainer, int estimatedSize) throws GeneralSecurityException, IOException {
         if (closed) {
-            throw new PdfException(PdfException.ThisInstanceOfPdfSignerAlreadyClosed);
+            throw new PdfException("This instance of PdfSigner has been already closed.");
         }
 
         PdfSignature signatureDictionary = new PdfSignature();
