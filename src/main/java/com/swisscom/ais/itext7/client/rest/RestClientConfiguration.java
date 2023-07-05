@@ -17,9 +17,12 @@ package com.swisscom.ais.itext7.client.rest;
 
 import com.swisscom.ais.itext7.client.common.PropertiesLoader;
 import com.swisscom.ais.itext7.client.config.ConfigurationProvider;
+import com.swisscom.ais.itext7.client.config.ConfigurationProviderPropertiesImpl;
 import com.swisscom.ais.itext7.client.utils.ValidationUtils;
 
-public class RestClientConfiguration extends PropertiesLoader<RestClientConfiguration.Builder> {
+import java.util.Properties;
+
+public class RestClientConfiguration  extends  PropertiesLoader<RestClientConfiguration.Builder> {
 
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 20;
     private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 10;
@@ -115,6 +118,15 @@ public class RestClientConfiguration extends PropertiesLoader<RestClientConfigur
             .withMaxConnectionsPerRoute(extractIntProperty(provider, "client.http.maxConnectionsPerRoute", true))
             .withConnectionTimeoutInSec(extractIntProperty(provider, "client.http.connectionTimeoutInSeconds", true))
             .withResponseTimeoutInSec(extractIntProperty(provider, "client.http.responseTimeoutInSeconds", true));
+    }
+
+    public RestClientConfiguration.Builder etsiFromConfigurationProvider(Properties properties) {
+        ConfigurationProviderPropertiesImpl provider = new ConfigurationProviderPropertiesImpl(properties);
+        return builder()
+                .withServiceSignUrl(extractStringProperty(provider, "etsi.jwt.url", true))
+                .withClientKeyFile(extractStringProperty(provider, "etsi.jwt.client.auth.keyFile", true))
+                .withClientKeyPassword(extractSecretProperty(provider, "etsi.jwt.client.auth.keyPassword", false))
+                .withClientCertificateFile(extractStringProperty(provider, "etsi.jwt.client.cert.file", true));
     }
 
     private void validate() {

@@ -16,22 +16,17 @@
 package com.swisscom.ais.itext7.client.cli;
 
 import com.swisscom.ais.itext7.client.AisClient;
+import com.swisscom.ais.itext7.client.ETSIAisClient;
 import com.swisscom.ais.itext7.client.common.AisClientException;
 import com.swisscom.ais.itext7.client.common.Loggers;
 import com.swisscom.ais.itext7.client.config.AisClientConfiguration;
 import com.swisscom.ais.itext7.client.config.LogbackConfiguration;
 import com.swisscom.ais.itext7.client.impl.AisClientImpl;
-import com.swisscom.ais.itext7.client.model.ConsentUrlCallback;
-import com.swisscom.ais.itext7.client.model.PdfMetadata;
-import com.swisscom.ais.itext7.client.model.SignatureResult;
-import com.swisscom.ais.itext7.client.model.UserData;
-import com.swisscom.ais.itext7.client.rest.SignatureRestClient;
-import com.swisscom.ais.itext7.client.rest.SignatureRestClientImpl;
-import com.swisscom.ais.itext7.client.rest.RestClientConfiguration;
-import com.swisscom.ais.itext7.client.utils.ClientUtils;
-import com.swisscom.ais.itext7.client.utils.FileUtils;
-import com.swisscom.ais.itext7.client.utils.PropertyUtils;
-
+import com.swisscom.ais.itext7.client.impl.ETSIAisClientImpl;
+import com.swisscom.ais.itext7.client.impl.PdfDocumentHandler;
+import com.swisscom.ais.itext7.client.model.*;
+import com.swisscom.ais.itext7.client.rest.*;
+import com.swisscom.ais.itext7.client.utils.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +88,44 @@ public class Cli {
 
     private static void signDocuments(ArgumentsContext context) throws IOException {
         Properties configProperties = PropertyUtils.loadPropertiesFromFile(context.getConfigFile());
+        if (context.getSignature().equals(SignatureMode.ETSI)) {
+            signWithETSI(configProperties, context);
+        } else {
+            signDss(context, configProperties);
+        }
+    }
+
+    private static void signWithETSI(Properties configProperties, ArgumentsContext context) throws IOException {
+        if (context.getInputFiles().size() > 1) {
+            clientLogger.error("Only one file signing is supported for ETSI interface.");
+            return;
+        }
+        String inputFile = context.getInputFiles().get(0);
+        PdfMetadata pdfMetadata = buildPdfMetadata(inputFile, retrieveOutputFileName(inputFile, context));
+        ETSIUserData userData = new ETSIUserData()
+                .fromProperties(configProperties)
+                .withConsentUrlCallback((consentUrl, userData1) -> System.out.println("Consent URL: " + consentUrl))
+                .build();
+        Trace trace = new Trace(userData.getTransactionId());
+        PdfDocumentHandler pdfDocumentHandler = DocumentUtils.prepareOneDocumentForSigning(pdfMetadata, SignatureMode.ETSI, SignatureType.CMS, userData, trace);
+
+        new LogbackConfiguration().initialize(VerboseLevel.BASIC);
+        RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(configProperties).build();
+        ETSIRestClient restClient = new ETSIRestClientImpl().withConfiguration(restConfig);
+
+
+        RestClientConfiguration etsiMtlsRestConfig = new RestClientConfiguration().
+                etsiFromConfigurationProvider(configProperties)
+                .build();
+
+        String jwtToken = AuthenticationUtils.getJwtToken(configProperties, trace, pdfDocumentHandler, etsiMtlsRestConfig);
+
+        try (ETSIAisClient client = new ETSIAisClientImpl(restClient, configProperties.getProperty("license.file"))) {
+            client.signOnDemandWithETSI(pdfDocumentHandler, userData, trace, jwtToken);
+        }
+    }
+
+    private static void signDss(ArgumentsContext context, Properties configProperties) throws IOException {
         AisClientConfiguration aisConfig = new AisClientConfiguration().fromProperties(configProperties).build();
         RestClientConfiguration restConfig = new RestClientConfiguration().fromProperties(configProperties).build();
         SignatureRestClient restClient = new SignatureRestClientImpl().withConfiguration(restConfig);
@@ -104,15 +137,15 @@ public class Cli {
                 System.out.println(SEPARATOR);
             });
             UserData userData = new UserData()
-                .fromProperties(configProperties)
-                .withConsentUrlCallback(consentUrlCallback)
-                .build();
+                    .fromProperties(configProperties)
+                    .withConsentUrlCallback(consentUrlCallback)
+                    .build();
             List<PdfMetadata> pdfsMetadata = context.getInputFiles().stream()
-                .map(inputFilePath -> buildPdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
-                .collect(Collectors.toList());
+                    .map(inputFilePath -> buildPdfMetadata(inputFilePath, retrieveOutputFileName(inputFilePath, context)))
+                    .collect(Collectors.toList());
 
             clientLogger.info("Start performing the signings for the input file(s). You can trace the corresponding details using the {} trace id.",
-                              userData.getTransactionId());
+                    userData.getTransactionId());
             SignatureResult signatureResult = ClientUtils.sign(client, pdfsMetadata, context.getSignature(), userData);
             clientLogger.info("Signature(s) final result: {} - {}", signatureResult, userData.getTransactionId());
         }
@@ -120,10 +153,10 @@ public class Cli {
 
     private static PdfMetadata buildPdfMetadata(String inputFilePath, String outputFilePath) {
         try {
-            return new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath));
+            return new PdfMetadata(new FileInputStream(inputFilePath), new FileOutputStream(outputFilePath), DigestAlgorithm.SHA256);
         } catch (IOException e) {
             throw new AisClientException(String.format("Could not prepare the IO resources for the PDF. Input file path: %s, output file path: %s.",
-                                                       inputFilePath, outputFilePath));
+                    inputFilePath, outputFilePath));
         }
     }
 

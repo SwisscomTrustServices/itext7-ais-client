@@ -58,7 +58,7 @@ public class TestSignatureWithETSIAllProgramable {
 
         try (ETSIAisClient client = new ETSIAisClientImpl(restClient, "path/to/licence")) {
             RAXCodeUrlParameters urlDetails = getRaxCodeUrlParameters(inputFilePath, hashAlgorithmOID, credentialID);
-            String codeFromConsole = AuthenticationUtils.getJWTFromConsole(urlDetails, pdfDocumentHandler, true);
+            String codeFromConsole = AuthenticationUtils.getCodeForJWTFromConsole(urlDetails, pdfDocumentHandler, true);
             client.signOnDemandWithETSI(pdfDocumentHandler, userData, trace, codeFromConsole);
         }
     }

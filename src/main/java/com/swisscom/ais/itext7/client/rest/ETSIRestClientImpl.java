@@ -13,6 +13,6 @@ public class ETSIRestClientImpl extends AbstractRestClient implements ETSIRestCl
 
     @Override
     public SignResponse signWithETSI(SignRequest signingRequest, Trace trace) {
-        return executeRequest("SignWithETSI", config.getServiceSignUrl(), signingRequest, SignResponse.class, new Trace(""));
+        return executeRequest("SignWithETSI", config.getServiceSignUrl(), signingRequest, SignResponse.class, trace);
     }
 }

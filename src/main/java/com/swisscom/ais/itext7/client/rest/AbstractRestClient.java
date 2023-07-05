@@ -131,7 +131,7 @@ public abstract class AbstractRestClient implements Closeable {
         }
     }
 
-    private <Resp> void logInfo(String operationName, @SuppressWarnings("SameParameterValue") Class<Resp> responseClass, Trace trace,
+    protected  <Resp> void logInfo(String operationName, @SuppressWarnings("SameParameterValue") Class<Resp> responseClass, Trace trace,
                                 String responseJson) {
         if (reqRespLogger.isInfoEnabled()) {
             String strippedResponse = stripInnerLargeBase64Content(responseJson);
@@ -147,7 +147,7 @@ public abstract class AbstractRestClient implements Closeable {
         return source.replaceAll(STRIP_PATTERN, STRIP_REPLACEMENT);
     }
 
-    private <Req> String getSerializedRequest(String operationName, Req requestObject, Trace trace) {
+    protected  <Req> String getSerializedRequest(String operationName, Req requestObject, Trace trace) {
         try {
             return jacksonMapper.writeValueAsString(requestObject);
         } catch (JsonProcessingException e) {
@@ -156,7 +156,7 @@ public abstract class AbstractRestClient implements Closeable {
         }
     }
 
-    private String getSerializedResponse(String operationName, Trace trace, CloseableHttpResponse response) throws IOException {
+    protected String getSerializedResponse(String operationName, Trace trace, CloseableHttpResponse response) throws IOException {
         try {
             return EntityUtils.toString(response.getEntity());
         } catch (ParseException e) {
@@ -165,7 +165,7 @@ public abstract class AbstractRestClient implements Closeable {
         }
     }
 
-    private <Resp> Resp readSerializedResponse(String operationName, Class<Resp> responseClass, Trace trace, String responseJson) {
+    protected  <Resp> Resp readSerializedResponse(String operationName, Class<Resp> responseClass, Trace trace, String responseJson) {
         try {
             return jacksonMapper.readValue(responseJson, responseClass);
         } catch (JsonProcessingException e) {

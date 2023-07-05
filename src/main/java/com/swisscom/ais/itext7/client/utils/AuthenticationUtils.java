@@ -5,11 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swisscom.ais.itext7.client.config.ConfigurationProvider;
 import com.swisscom.ais.itext7.client.config.ConfigurationProviderPropertiesImpl;
 import com.swisscom.ais.itext7.client.impl.PdfDocumentHandler;
+import com.swisscom.ais.itext7.client.model.Trace;
+import com.swisscom.ais.itext7.client.rest.RestClientConfiguration;
+import com.swisscom.ais.itext7.client.rest.RestClientETSIAuthenticationImpl;
 import com.swisscom.ais.itext7.client.rest.model.RAXCodeUrlParameters;
+import com.swisscom.ais.itext7.client.rest.model.etsi.auth.TokenRequest;
 import com.swisscom.ais.itext7.client.rest.model.signreq.etsi.rax.AuthRequest;
 import com.swisscom.ais.itext7.client.rest.model.signreq.etsi.rax.DocumentsDigests;
 
 import java.awt.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.Collections;
@@ -18,7 +23,20 @@ import java.util.Scanner;
 
 public class AuthenticationUtils {
 
-    public static String getJWTFromConsole(RAXCodeUrlParameters urlDetails, PdfDocumentHandler prepareDocumentForSigning, boolean shouldOpenBrowser) throws JsonProcessingException {
+
+    public static String getJwtToken(Properties properties, Trace trace, PdfDocumentHandler pdfDocumentHandler, RestClientConfiguration etsiMtlsRestConfig) throws IOException {
+        try (RestClientETSIAuthenticationImpl restClientETSIAuthentication = new RestClientETSIAuthenticationImpl().withConfiguration(etsiMtlsRestConfig)) {
+            String codeFromConsole = getCodeForJWTFromConsole(new RAXCodeUrlParameters().fromProperties(properties), pdfDocumentHandler, true);
+
+            TokenRequest tokenRequest = new TokenRequest();
+            tokenRequest.setCode(codeFromConsole);
+            tokenRequest.setClient_id(properties.getProperty("etsi.jwt.clientId"));
+            tokenRequest.setClient_secret(properties.getProperty("etsi.jwt.client.secret"));
+            return restClientETSIAuthentication.getToken(tokenRequest, trace).getAccess_token();
+        }
+    }
+
+    public static String getCodeForJWTFromConsole(RAXCodeUrlParameters urlDetails, PdfDocumentHandler prepareDocumentForSigning, boolean shouldOpenBrowser) throws JsonProcessingException {
         String claims = claims(urlDetails, prepareDocumentForSigning);
         String url = createRAXUrl(urlDetails, claims);
         System.out.println("click url to retrieve JWT code: " + url);
