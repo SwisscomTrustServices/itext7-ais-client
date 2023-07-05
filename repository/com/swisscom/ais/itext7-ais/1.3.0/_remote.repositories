@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Jul 05 10:16:16 EEST 2023
+itext7-ais-1.3.0-sources.jar>=
+itext7-ais-1.3.0.jar>=
+itext7-ais-1.3.0.pom>=
