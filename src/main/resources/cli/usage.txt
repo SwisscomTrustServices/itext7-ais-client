@@ -4,31 +4,31 @@ Swisscom AIS iText Client - ${versionInfo}
 Usage: ./bin/ais-client.sh [OPTIONS]
 
 Options:
-    -init                                               - Create sample configuration files in the current folder
+    -init                                                   - Create sample configuration files in the current folder
 
-    -input [FILE]                                       - Source PDF file to sign. You can use this parameter several times, to sign multiple
-                                                          documents at once. Using multiple inputs forces the usage of suffix (see below) as it is
-                                                          difficult to give both the input and the output files as parameters.
+    -input [FILE]                                           - Source PDF file to sign. You can use this parameter several times, to sign multiple
+                                                            documents at once. Using multiple inputs forces the usage of suffix (see below) as it is
+                                                            difficult to give both the input and the output files as parameters.
 
-    -output [FILE]                                      - Output PDF file, where the signed document should be written. This parameter can be
-                                                          used only when one single input is given. For more than one input, use suffix.
+    -output [FILE]                                          - Output PDF file, where the signed document should be written. This parameter can be
+                                                            used only when one single input is given. For more than one input, use suffix.
 
-    -suffix [SUFFIX]                                    - Suffix for output file(s), composed using the input file plus the suffix, as alternative to
-                                                          specifying the output file entirely. Default is "-signed-#time", where "#time" is replaced
-                                                          with current time (yyyyMMdd-hhMMss).
+    -suffix [SUFFIX]                                        - Suffix for output file(s), composed using the input file plus the suffix, as alternative to
+                                                            specifying the output file entirely. Default is "-signed-#time", where "#time" is replaced
+                                                            with current time (yyyyMMdd-hhMMss).
 
-    -type [static|ondemand|ondemand-stepup|timestamp]   - The type of signature to create
+    -type [static|ondemand|ondemand-stepup|timestamp|etsi]   - The type of signature to create
 
-    -config [PROPERTIES FILE]                           - The properties file that provides the extra configuration parameters. Use -init to create a
-                                                          sample file. If you don't specify a file, by default sign-pdf.properties is used.
+    -config [PROPERTIES FILE]                               - The properties file that provides the extra configuration parameters. Use -init to create a
+                                                            sample file. If you don't specify a file, by default sign-pdf.properties is used.
 
-    -help                                               - This help text
+    -help                                                   - This help text
 
-    -v                                                  - Be verbose about what is going on (sets Logback config to info)
+    -v                                                      - Be verbose about what is going on (sets Logback config to info)
 
-    -vv                                                 - Be EXTRA verbose about what is going on (sets Logback config to debug, without HTTP and TLS traffic)
+    -vv                                                     - Be EXTRA verbose about what is going on (sets Logback config to debug, without HTTP and TLS traffic)
 
-    -vvv                                                - Be EXTRA-EXTRA verbose about what is going on (sets Logback config to debug, with HTTP and TLS traffic)
+    -vvv                                                    - Be EXTRA-EXTRA verbose about what is going on (sets Logback config to debug, with HTTP and TLS traffic)
 
 Use cases:
     1. > ./bin/ais-client.sh -init   => Have the config files generated for you in the current folder
